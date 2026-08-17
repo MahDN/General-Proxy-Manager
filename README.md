@@ -1,101 +1,178 @@
-# Sing-Box 多端口配置生成器 (SingMP-Gen)
+# General Proxy Manager (SingMP-Gen)
 
-[English](/README-EN.md) | 简体中文
+[English](/README-EN.md) | 简体中文 | [فارسی](/README-FA.md)
 
-一个纯前端实现的 Web 应用，旨在帮助用户快速、轻松地为 `sing-box` 内核生成多端口、多出口的配置文件。特别适用于需要在一台计算机上使用指纹浏览器或者不同浏览器，同时管理多个独立网络环境，使用 Socks5 节点的场景，如跨境电商运营、多账号管理等。
+基于 **sing-box 1.13.18** 的通用多端口本地代理网关生成器。
 
-[Demo](https://singmp.hotrue.cc/)
+一个纯前端、隐私优先的 Web 工具，允许用户导入 $N$ 个独立的远程代理节点，并自动生成 $N$ 个互相隔离的本地代理端点（每个端口绑定唯一的代理出口与专属 DNS 隔离路径）。
 
-## 解决了什么痛点？
+---
 
-许多跨境电商运营人员或开发者拥有多个代理节点，但常用的代理客户端（如 Clash, v2RayN）默认只允许一个全局出口。这意味着无法简单地为不同的应用程序或浏览器窗口分配不同的 Socks 出口 IP。虽然 `sing-box` 内核支持通过复杂的配置实现“分端口分流”，但手动编写 JSON 配置文件对非技术用户门槛高、易出错。
+## 🎯 核心概念与解决的痛点
 
-本工具通过一个直观的图形化界面，将这个复杂的过程自动化，让任何人都能在几分钟内创建出稳定、防泄漏的多端口代理环境。
+在多账号运营、API 调用隔离（如 **NVIDIA NIM API**、多账号 **OpenCode** 实例）、网络爬虫开发、自动化测试等场景中，应用程序往往需要同时使用不同的代理 IP 发起请求。
 
-## ✨ 核心功能
-
-- **轻松导入节点**: 支持直接粘贴 `outbounds` 数组或上传完整的配置文件。
-- **智能端口分配**: 可设置起始端口号，为所有节点自动分配递增的端口，并支持手动修改默认端口号。
-- **一键生成配置**: 根据用户设置，快速生成一份完整、可用、防 DNS 泄漏的 `sing-box` 配置文件。
-- **纯前端实现**: 所有操作均在您的浏览器本地完成，无需后端服务器，确保节点信息的绝对安全和隐私。
-- **多语言支持**: 提供中文和英文界面，并可根据浏览器语言自动切换。
-- **配置模板化**: 项目逻辑与 `sing-box` 配置模板分离，便于用户根据自己的需求定制模板 (`sing-box-template.json.tpl`)。
-- **健壮的容错性**: 自动清理模板文件中的注释、尾随逗号和非法控制字符，确保加载成功。
-
-## 🚀 如何使用
-
-由于浏览器安全策略的限制，本项目不能直接通过 `file://` 协议打开 `index.html` 文件运行。您需要通过一个 Web 服务器来访问它。
-当然也可以直接 Fork 项目，再部署到自己的 Cloudflare Pages 或者 Github Pages 上。
-
-### 推荐方式：使用 Python
-
-1. 确保您的电脑已安装 Python。
-
-2. 将本项目的所有文件 (`index.html`, `main.js`, `en.yml`, `zh.yml`, `sing-box-template.json.tpl`) 放置在同一个目录下。
-
-3. 打开终端或命令行工具，使用 `cd` 命令进入该目录。
-
-4. 运行以下命令启动一个简单的 Web 服务器：
-
-   ```
-   # 如果您使用 Python 3
-   python -m http.server 8000
-   
-   # 如果您使用 Python 2
-   python -m SimpleHTTPServer 8000
-   ```
-
-5. 打开您的浏览器，访问 `http://localhost:8000`。
-
-现在，您应该可以看到工具界面并开始使用了，如图：
-
-![](img/Sing-Box-Multi-port-Config-Generator-01.png)
-
-### 使用方法
-
-打开工具网页，如上图。
-
-1. 粘贴 sing-box 订阅链接或者直接粘贴 sing-box 格式的节点信息。
-
-> [!note]
-> 目前我觉得最方便好用的订阅节点管理和转换工具可以推荐 [Sub-Store](https://github.com/sub-store-org/Sub-Store)。
-
-2. 设置起始端口，默认从 50000 开始。
-3. 设置默认节点，可以按默认，或者根据自己需要设置一个默认节点。比如我们使用 v2rayN 最常用 10808 作本地监听默认端口。
-4. 最后生成配置后，直接复制或者下载 `config.json` 到本地，导入客户端便可使用。
-
-![](img/Sing-Box-Multi-port-Config-Generator-02.png)
-
-5. 导入客户端，以 v2rayN 为例，通过 `配置文件` - `添加自定义配置文件` 导入配置
-
-![](img/Sing-Box-Multi-port-Config-Generator-03.png)
-
-6. 配置文件可以按需起个别名，`Core 类型` 那里需要选 `sing_box`。最后确定，再在主界面选择添加的这个配置激活就可以了。
-
-![](img/Sing-Box-Multi-port-Config-Generator-04.png)
-
-## 🛠️ 技术栈
-
-- **前端**: 原生 HTML, JavaScript (ESM)
-- **样式**: Tailwind CSS
-- **YAML 解析**: JS-YAML
-
-## 📁 项目结构
+传统代理客户端通常仅提供单一的全局监听端口，难以满足多端口分流的需求。**General Proxy Manager** 提供了确定性的端口映射关系：
 
 ```
-.
-├── index.html                  # 主页面结构
-├── main.js                     # 核心应用逻辑
-├── sing-box-template.json.tpl  # sing-box 配置模板 (支持注释)
-├── en.yml                      # 英文语言包
-├── zh.yml                      # 中文语言包
-└── README.md                   # 项目说明文件
+LOCAL PROXY PORT (本地端口)
+        ↓
+SING-BOX INBOUND (Mixed: SOCKS5 / HTTP)
+        ↓
+EXACTLY ONE OUTBOUND (严格单出站)
+        ↓
+REMOTE PROXY (远程代理)
+        ↓
+INTERNET
 ```
 
-## 🤝 贡献
+### 映射示例：
+- `127.0.0.1:10808` → `proxy-in-01` → `proxy-out-01` (代理节点 1)
+- `127.0.0.1:10809` → `proxy-in-02` → `proxy-out-02` (代理节点 2)
+- `127.0.0.1:10810` → `proxy-in-03` → `proxy-out-03` (代理节点 3)
+- ...
+- `127.0.0.1:(10808 + N - 1)` → `proxy-in-N` → `proxy-out-N` (代理节点 N)
 
-感谢 Gemini，欢迎提交 Pull Requests 或 Issues 来帮助改进这个项目。
+每个端口均独立运作，绝不发生跨端口串流，也绝不在代理断开时静默回退直连（`route.final = "block"`）。
+
+---
+
+## ✨ 核心特性
+
+- **严格 1:1 端口与出站隔离**：每个启用的代理节点独占一个本地监听端口，路由规则严格一一对应。
+- **目标内核版本**：针对 **sing-box 1.13.18** 语法标准设计与验证（`SUPPORTED_SING_BOX_VERSION = "1.13.18"`）。
+- **双协议兼容 (Mixed Inbound)**：每个端口同时支持 **SOCKS5** 与 **HTTP** 代理协议，客户端按需连接即可。
+- **安全健壮的 DNS 架构**：
+  - **引导 DNS (`local_dns`)**：直连解析代理服务器本身的域名，防止因循环依赖导致启动失败。
+  - **专属代理 DNS (`dns-proxy-XX`)**：每个入站流量的 DNS 请求均通过其对应的代理出站隧道发出 (`detour`)。
+  - **IPv4 优先策略 (`prefer_ipv4`)**：有效避免在 IPv6 不稳定的网络环境下发生连接超时与故障。
+- **完整保留节点原始配置**：深度克隆用户导入的 VLESS（包含 Reality、WebSocket、gRPC、Vision、uTLS 等关键参数），不篡改敏感字段。
+- **隐私优先，零第三方依赖**：
+  - 纯前端本地解析与生成，绝不上传节点数据。
+  - 订阅直接由浏览器发起请求，杜绝使用可能泄露凭据的第三方 CORS 中转服务。
+- **内置配置结构校验**：前端生成时自动执行完整结构验证，确保端口、标签、路由与 DNS 引用合法一致。
+
+---
+
+## 🔒 DNS 泄漏与协议说明（重要）
+
+本项目工作在 **代理模式 (Proxy Mode)**，而非 TUN 虚拟网卡模式。
+
+sing-box 仅能接管发送至其本地监听端口的流量与 DNS 请求。为确保远端域名解析通过代理通道完成，建议使用支持远端 DNS 解析的客户端协议：
+
+- **SOCKS5 (推荐 `socks5h://`)**：使用 `socks5h://` 协议可指示客户端将域名交由代理端解析。
+- **HTTP 代理**：标准 HTTP CONNECT 隧道会由代理端解析目标主机名。
+
+> [!WARNING]
+> 若客户端程序自行使用操作系统本地 DNS 解析目标 IP 后再通过 SOCKS5 连接，该部分 DNS 解析将发生在本地。如需全局网络拦截，请等待未来 TUN 模式支持。
+
+---
+
+## 💻 典型应用场景与代码示例
+
+### 1. cURL 命令行
+
+通过 SOCKS5h（远端 DNS 解析）：
+```bash
+# 使用 1 号代理
+curl --proxy socks5h://127.0.0.1:10808 https://api.ipify.org
+
+# 使用 2 号代理
+curl --proxy socks5h://127.0.0.1:10809 https://api.ipify.org
+```
+
+通过 HTTP 代理：
+```bash
+curl --proxy http://127.0.0.1:10808 https://api.ipify.org
+```
+
+---
+
+### 2. Python (Requests / HTTPX / NVIDIA NIM API)
+
+```python
+import requests
+
+# 客户端 A 使用 1 号代理
+proxies_node1 = {
+    "http": "http://127.0.0.1:10808",
+    "https": "http://127.0.0.1:10808"
+}
+resp1 = requests.get("https://api.ipify.org?format=json", proxies=proxies_node1)
+print("Node 1 IP:", resp1.json()["ip"])
+
+# 客户端 B 使用 2 号代理
+proxies_node2 = {
+    "http": "http://127.0.0.1:10809",
+    "https": "http://127.0.0.1:10809"
+}
+resp2 = requests.get("https://api.ipify.org?format=json", proxies=proxies_node2)
+print("Node 2 IP:", resp2.json()["ip"])
+```
+
+使用 SOCKS5h：
+```python
+proxies = {
+    "http": "socks5h://127.0.0.1:10808",
+    "https": "socks5h://127.0.0.1:10808"
+}
+```
+
+---
+
+### 3. Node.js
+
+```javascript
+import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+
+const agent1 = new HttpsProxyAgent('http://127.0.0.1:10808');
+const res = await fetch('https://api.ipify.org?format=json', { agent: agent1 });
+const data = await res.json();
+console.log('IP via Proxy 01:', data.ip);
+```
+
+---
+
+## 🚀 本地运行指南
+
+由于浏览器的安全策略（ES Module 与 fetch 限制），请通过本地 Web 服务器运行：
+
+### 推荐：使用 Python
+```bash
+# Python 3
+python -m http.server 8000
+```
+
+### 使用 Node.js
+```bash
+npx serve .
+```
+
+打开浏览器访问：`http://localhost:8000`
+
+---
+
+## 🧪 自动化测试
+
+项目内置了针对核心生成逻辑与 sing-box 1.13.18 语法规范的完整测试套件（涵盖全部 24+ 测试用例）：
+
+```bash
+npm test
+```
+
+测试覆盖：
+- 单节点 / 10 节点多端口生成
+- 端口范围与重复校验
+- 原始标签重名与特殊字符隔离
+- 域名服务器引导解析与 IP 字面量优化
+- VLESS Reality / WebSocket / gRPC 参数无损保留
+- 严格 1:1 路由隔离与 DNS 路径映射
+- 禁用节点不生成监听与出站
+- sing-box 1.13.18 二进制运行时语法检查 (`sing-box check`)
+
+---
 
 ## 📄 许可证
 
-本项目采用 [MIT License](https://opensource.org/licenses/MIT) 授权。
+本项目基于 [MIT License](https://opensource.org/licenses/MIT) 开源。

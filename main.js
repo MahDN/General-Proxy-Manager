@@ -1,432 +1,512 @@
-// Import JS-YAML library from CDN
-import jsyaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
+/**
+ * General Proxy Manager - Main Application Logic
+ * Target sing-box version: 1.13.18
+ */
 
-// --- APPLICATION LOGIC ---
+import jsyaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
+import {
+  SUPPORTED_SING_BOX_VERSION,
+  parseInput,
+  normalizeNodes,
+  validatePorts,
+  generateConfig,
+  validateGeneratedConfig,
+  deepClone
+} from './core-generator.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Global variables
-    let outbounds = [];
-    let langData = {};
-    let singBoxTemplate = null;
-    let isLoading = false;
+  // Application State
+  let rawOutbounds = [];
+  let normalizedNodes = [];
+  let langData = {};
+  let singBoxTemplate = null;
+  let isLoading = false;
+  let currentGeneratedConfig = null;
 
-    // Element references
-    const nodesInput = document.getElementById('nodes-input');
-    const fileInput = document.getElementById('file-input');
-    const startPortInput = document.getElementById('start-port');
-    const nodesListContainer = document.getElementById('nodes-list');
-    const generateBtn = document.getElementById('generate-btn');
-    const configContent = document.getElementById('config-content'); // Changed from configSection
-    const outputSection = document.getElementById('output-section');
-    const configOutput = document.getElementById('config-output');
-    const copyBtn = document.getElementById('copy-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    const langSwitcher = document.getElementById('language-switcher');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    
-    // --- UI State Management ---
-    const setLoading = (state) => {
-        isLoading = state;
-        if (state) {
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
-            nodesInput.disabled = true;
-        } else {
-            loadingOverlay.classList.add('hidden');
-            loadingOverlay.classList.remove('flex');
-            nodesInput.disabled = false;
-        }
-    };
+  // DOM Element References
+  const nodesInput = document.getElementById('nodes-input');
+  const fileInput = document.getElementById('file-input');
+  const clearInputBtn = document.getElementById('clear-input-btn');
+  const subscriptionUrlInput = document.getElementById('subscription-url-input');
+  const fetchSubBtn = document.getElementById('fetch-sub-btn');
 
-    // --- Internationalization (i18n) ---
-    const fetchLanguageFile = async (lang) => {
-        const url = `${lang}.yml`;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const yamlText = await response.text();
-            return jsyaml.load(yamlText);
-        } catch (error) {
-            console.error(`Failed to fetch language file for ${lang}:`, error);
-            return null;
-        }
-    };
+  const nodesTableSection = document.getElementById('nodes-table-section');
+  const nodesTableBody = document.getElementById('nodes-table-body');
+  const nodesSummaryBadge = document.getElementById('nodes-summary-badge');
 
-    const applyLanguage = () => {
-        if (!langData) return;
-        // Update elements with data-lang for text content
-        document.querySelectorAll('[data-lang]').forEach(el => {
-            const key = el.getAttribute('data-lang');
-            if (langData[key]) {
-                 if (el.tagName === 'BUTTON' && el.disabled) {
-                    el.textContent = langData['generateBtnDisabled'];
-                } else {
-                    el.textContent = langData[key];
-                }
-            }
-        });
-        // Update elements with data-lang-title for tooltips
-        document.querySelectorAll('[data-lang-title]').forEach(el => {
-            const key = el.getAttribute('data-lang-title');
-            if (langData[key]) {
-                el.setAttribute('title', langData[key]);
-            }
-        });
+  const listenAddressInput = document.getElementById('listen-address');
+  const startPortInput = document.getElementById('start-port');
+  const bootstrapDnsSelect = document.getElementById('bootstrap-dns');
+  const remoteDnsSelect = document.getElementById('remote-dns');
+  const dnsStrategySelect = document.getElementById('dns-strategy');
+  const logLevelSelect = document.getElementById('log-level');
 
-        if (generateBtn.disabled) {
-            generateBtn.textContent = langData.generateBtnDisabled;
-        }
-    };
+  const generateBtn = document.getElementById('generate-btn');
+  const validateBtn = document.getElementById('validate-btn');
+  const outputSection = document.getElementById('output-section');
+  const validationCard = document.getElementById('validation-card');
+  const summaryMappingList = document.getElementById('summary-mapping-list');
+  const configOutput = document.getElementById('config-output');
+  const copyBtn = document.getElementById('copy-btn');
+  const downloadBtn = document.getElementById('download-btn');
+  const langSwitcher = document.getElementById('language-switcher');
+  const loadingOverlay = document.getElementById('loading-overlay');
 
-    const setLanguage = async (lang) => {
-        const data = await fetchLanguageFile(lang);
-        if (data) {
-            langData = data;
-            applyLanguage();
-        }
-    };
-    
-    const initLanguage = async () => {
-        const browserLang = navigator.language.split('-')[0];
-        const lang = browserLang === 'zh' ? 'zh' : 'en';
-        langSwitcher.value = lang;
-        await setLanguage(lang);
-    };
-
-    // --- Template Loading ---
-    const fetchTemplate = async () => {
-        const url = 'sing-box-template.json.tpl';
-        let text;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            text = await response.text();
-        } catch (fetchError) {
-            alert(langData.errorTemplateFetch);
-            return null;
-        }
-
-        try {
-            let cleanedText = text.replace(/(?<!:)\s*\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-            cleanedText = cleanedText.replace(/,(\s*[}\]])/g, '$1');
-            cleanedText = cleanedText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
-            return JSON.parse(cleanedText);
-        } catch (parseError) {
-            alert(langData.errorTemplateParse);
-            return null;
-        }
-    };
-
-    // --- Port Validation ---
-    const validatePorts = () => {
-        const portInputs = Array.from(document.querySelectorAll('.node-port'));
-        const portValues = new Map();
-        let allPortsValid = true;
-
-        // Reset all borders first
-        portInputs.forEach(input => input.classList.remove('border-red-500', 'focus:ring-red-500'));
-
-        for (const input of portInputs) {
-            const port = parseInt(input.value, 10);
-            
-            // Check range
-            if (isNaN(port) || port < 1 || port > 65535) {
-                input.classList.add('border-red-500', 'focus:ring-red-500');
-                allPortsValid = false;
-            }
-
-            // Check for duplicates
-            if (portValues.has(port)) portValues.get(port).push(input);
-            else portValues.set(port, [input]);
-        }
-
-        let hasDuplicates = false;
-        for (const inputs of portValues.values()) {
-            if (inputs.length > 1) {
-                hasDuplicates = true;
-                inputs.forEach(input => input.classList.add('border-red-500', 'focus:ring-red-500'));
-            }
-        }
-        
-        if (!allPortsValid) return { valid: false, error: 'invalid' };
-        if (hasDuplicates) return { valid: false, error: 'duplicate' };
-        return { valid: true, error: null };
-    };
-
-    // --- Node Handling ---
-    const parseAndRenderNodes = (text) => {
-        try {
-            let cleanedText = text.replace(/,(\s*[}\]])/g, '$1');
-            cleanedText = cleanedText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
-            const parsed = JSON.parse(cleanedText);
-            let potentialOutbounds = null;
-
-            if (Array.isArray(parsed)) potentialOutbounds = parsed;
-            else if (typeof parsed === 'object' && parsed !== null && Array.isArray(parsed.outbounds)) potentialOutbounds = parsed.outbounds;
-
-            if (potentialOutbounds) {
-                outbounds = potentialOutbounds.filter(node => node && typeof node === 'object' && node.tag);
-                if (outbounds.length > 0) {
-                    renderNodeList();
-                    configContent.classList.remove('hidden'); // Show content
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = langData.generateBtn;
-                } else {
-                    resetConfigView();
-                }
-            } else {
-                throw new Error("Input is not an array and does not contain an 'outbounds' array key.");
-            }
-        } catch (error) {
-            alert(langData.errorInvalidJSON);
-            resetConfigView();
-        }
-    };
-    
-    // --- Subscription Handling ---
-    const fetchSubscription = async (url) => {
-        // Using a public CORS proxy to fetch subscription content
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        setLoading(true);
-        try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const text = await response.text();
-            nodesInput.value = text; // Populate textarea with fetched content
-            // *** BUG FIX STARTS HERE ***
-            // Directly call the parsing function, bypassing the handleInput's loading check.
-            parseAndRenderNodes(text);
-            // *** BUG FIX ENDS HERE ***
-        } catch (error) {
-            console.error("Subscription fetch error:", error);
-            alert(langData.errorSubscriptionFetch);
-            resetConfigView();
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    // --- Main Input Processor ---
-    const handleInput = (text) => {
-        if (isLoading) return;
-        const trimmedText = text.trim();
-        if (!trimmedText) {
-            resetConfigView();
-            return;
-        }
-
-        // Check if the input is a URL
-        if (trimmedText.startsWith('http://') || trimmedText.startsWith('https://')) {
-            fetchSubscription(trimmedText);
-        } else {
-            // Assume it's JSON content
-            parseAndRenderNodes(trimmedText);
-        }
-    };
-
-    const renderNodeList = () => {
-        nodesListContainer.innerHTML = '';
-        const startingPort = parseInt(startPortInput.value, 10);
-        
-        const header = document.createElement('div');
-        header.className = 'grid grid-cols-12 gap-2 items-center font-semibold text-sm text-gray-600 dark:text-gray-300 px-2';
-        header.innerHTML = `
-            <div class="col-span-6" data-lang="nodeNameLabel">${langData.nodeNameLabel}</div>
-            <div class="col-span-4" data-lang="portLabel">${langData.portLabel}</div>
-            <div class="col-span-2 text-center flex items-center justify-center gap-1">
-                <span data-lang="defaultLabel">${langData.defaultLabel}</span>
-                <div data-lang-title="defaultTooltip" title="${langData.defaultTooltip}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cursor-help text-gray-400"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                </div>
-            </div>
-        `;
-        nodesListContainer.appendChild(header);
-
-        outbounds.forEach((node, index) => {
-            const nodeEl = document.createElement('div');
-            nodeEl.className = 'grid grid-cols-12 gap-2 items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg';
-            nodeEl.innerHTML = `
-                <div class="col-span-6 truncate" title="${node.tag}">${node.tag}</div>
-                <div class="col-span-4">
-                    <input type="number" value="${startingPort + index}" class="node-port w-full p-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="col-span-2 flex justify-center">
-                    <input type="radio" name="default-node" value="${node.tag}" ${index === 0 ? 'checked' : ''} class="default-node-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
-                </div>
-            `;
-            nodesListContainer.appendChild(nodeEl);
-        });
-    };
-
-    const resetConfigView = () => {
-        configContent.classList.add('hidden'); // Hide content
-        outputSection.classList.add('hidden');
-        generateBtn.disabled = true;
-        generateBtn.textContent = langData.generateBtnDisabled;
-        nodesListContainer.innerHTML = '';
-        outbounds = [];
-    };
-
-    // --- Config Generation ---
-    const generateConfig = () => {
-        if (!singBoxTemplate) return;
-
-        const portValidation = validatePorts();
-        if (!portValidation.valid) {
-            if (portValidation.error === 'duplicate') alert(langData.errorPortDuplicate);
-            else alert(langData.errorPortInvalid);
-            return;
-        }
-        
-        const finalConfig = JSON.parse(JSON.stringify(singBoxTemplate));
-        
-        // --- Start of Final Logic ---
-        
-        // 1. Prepare base arrays
-        finalConfig.inbounds = [];
-        finalConfig.dns.servers = finalConfig.dns.servers.filter(s => s.tag === 'local_dns');
-        finalConfig.dns.rules = finalConfig.dns.rules.filter(r => r.rule_set && r.rule_set.includes('geosite-cn'));
-        finalConfig.route.rules = finalConfig.route.rules.filter(r => r.rule_set || r.ip_is_private || r.clash_mode);
-        
-        // ** NEW ** Add a global DNS strategy to prefer IPv4 and avoid IPv6 errors
-        finalConfig.dns.strategy = "prefer_ipv4";
-
-        const userOutbounds = JSON.parse(JSON.stringify(outbounds));
-        const baseOutbounds = finalConfig.outbounds.filter(o => ['direct', 'block'].includes(o.tag));
-        finalConfig.outbounds = [...userOutbounds, ...baseOutbounds];
-        
-        let defaultNodeTag = document.querySelector('input[name="default-node"]:checked').value;
-        let defaultDnsServerTag = '';
-
-        // Update rule_set download_detour to use the default proxy node so rule files
-        // are fetched through the proxy tunnel (avoids direct-connection blocks / timeouts)
-        finalConfig.route.rule_set.forEach(rs => {
-            rs.download_detour = defaultNodeTag;
-        });
-
-        // 2. Extract proxy server hostnames to create a DNS exemption rule
-        const proxyHostnames = [...new Set(userOutbounds
-            .map(o => o.server)
-            .filter(server => server && !/^\d{1,3}(\.\d{1,3}){3}$/.test(server))
-        )];
-
-        if (proxyHostnames.length > 0) {
-            finalConfig.dns.rules.unshift({ "domain": proxyHostnames, "server": "local_dns" });
-        }
-
-        // 3. Create Inbounds, DNS servers, DNS rules, and Route rules for each node
-        const nodeElements = nodesListContainer.querySelectorAll('.grid.grid-cols-12.gap-2.items-center');
-        nodeElements.forEach((el, index) => {
-            if (index === 0) return;
-            const node = outbounds[index-1];
-            const portInput = el.querySelector('.node-port');
-            const radioInput = el.querySelector('.default-node-radio');
-            const port = parseInt(portInput.value, 10);
-            const tag = node.tag;
-            const inboundTag = `in-${port}`;
-            const dnsServerTag = `dns-${tag}`;
-
-            finalConfig.inbounds.push({ "type": "mixed", "tag": inboundTag, "listen": "127.0.0.1", "listen_port": port });
-            finalConfig.dns.servers.unshift({ "tag": dnsServerTag, "type": "https", "server": "1.1.1.1", "detour": tag });
-            finalConfig.dns.rules.push({ "inbound": inboundTag, "server": dnsServerTag });
-            finalConfig.route.rules.unshift({ "inbound": inboundTag, "outbound": tag });
-
-            if (radioInput.checked) defaultDnsServerTag = dnsServerTag;
-        });
-
-        // 4. Set default routes, domain resolver, and final DNS
-        finalConfig.route.final = defaultNodeTag;
-        finalConfig.route.default_domain_resolver = { "server": "local_dns" };
-        finalConfig.dns.final = defaultDnsServerTag;
-        const globalModeRule = finalConfig.route.rules.find(r => r.clash_mode === "Global");
-        if(globalModeRule) globalModeRule.outbound = defaultNodeTag;
-
-        // --- End of Final Logic ---
-
-        configOutput.value = JSON.stringify(finalConfig, null, 2);
-        outputSection.classList.remove('hidden');
-    };
-
-    // --- Event Listeners ---
-    langSwitcher.addEventListener('change', (e) => setLanguage(e.target.value));
-
-    nodesInput.addEventListener('input', (e) => handleInput(e.target.value));
-
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                nodesInput.value = event.target.result;
-                handleInput(event.target.result);
-            };
-            reader.readAsText(file);
-        }
-    });
-    
-    // Drag and Drop Listeners
-    nodesInput.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        nodesInput.classList.add('drag-over');
-    });
-    nodesInput.addEventListener('dragleave', () => {
-        nodesInput.classList.remove('drag-over');
-    });
-    nodesInput.addEventListener('drop', (e) => {
-        e.preventDefault();
-        nodesInput.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                nodesInput.value = event.target.result;
-                handleInput(event.target.result);
-            };
-            reader.readAsText(file);
-        }
-    });
-
-    startPortInput.addEventListener('input', () => {
-        const ports = document.querySelectorAll('.node-port');
-        const startingPort = parseInt(startPortInput.value, 10);
-        ports.forEach((port, index) => {
-            port.value = startingPort + index;
-        });
-        validatePorts(); // Validate on batch change
-    });
-
-    // Live validation for individual port changes
-    nodesListContainer.addEventListener('input', (e) => {
-        if (e.target.classList.contains('node-port')) {
-            validatePorts();
-        }
-    });
-
-    generateBtn.addEventListener('click', generateConfig);
-
-    copyBtn.addEventListener('click', () => {
-        configOutput.select();
-        document.execCommand('copy');
-        copyBtn.textContent = langData.copiedBtn;
-        setTimeout(() => { copyBtn.textContent = langData.copyBtn; }, 2000);
-    });
-
-    downloadBtn.addEventListener('click', () => {
-        const blob = new Blob([configOutput.value], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'config.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    // --- Initial Load ---
-    await initLanguage();
-    singBoxTemplate = await fetchTemplate();
-    if (!singBoxTemplate) {
-        document.querySelector('main').style.display = 'none';
+  // --- Loading State ---
+  const setLoading = (state, message = '') => {
+    isLoading = state;
+    if (state) {
+      loadingOverlay.classList.remove('hidden');
+      if (message) {
+        const span = loadingOverlay.querySelector('span');
+        if (span) span.textContent = message;
+      }
+      nodesInput.disabled = true;
+    } else {
+      loadingOverlay.classList.add('hidden');
+      nodesInput.disabled = false;
     }
+  };
+
+  // --- Internationalization (i18n) ---
+  const fetchLanguageFile = async (lang) => {
+    const url = `${lang}.yml`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const yamlText = await response.text();
+      return jsyaml.load(yamlText);
+    } catch (error) {
+      console.error(`Failed to fetch language file for ${lang}:`, error);
+      return null;
+    }
+  };
+
+  const applyLanguage = () => {
+    if (!langData) return;
+    document.querySelectorAll('[data-lang]').forEach(el => {
+      const key = el.getAttribute('data-lang');
+      if (langData[key]) {
+        if (el.tagName === 'BUTTON' && el.disabled && langData[`${key}Disabled`]) {
+          el.textContent = langData[`${key}Disabled`];
+        } else {
+          el.textContent = langData[key];
+        }
+      }
+    });
+
+    if (generateBtn.disabled) {
+      generateBtn.textContent = langData.generateBtnDisabled || 'Please import proxy nodes first';
+    } else {
+      generateBtn.textContent = langData.generateBtn || 'Generate Configuration';
+    }
+  };
+
+  const setLanguage = async (lang) => {
+    const data = await fetchLanguageFile(lang);
+    if (data) {
+      langData = data;
+      if (lang === 'fa') {
+        document.documentElement.dir = 'rtl';
+        document.body.setAttribute('dir', 'rtl');
+      } else {
+        document.documentElement.dir = 'ltr';
+        document.body.setAttribute('dir', 'ltr');
+      }
+      applyLanguage();
+      if (normalizedNodes.length > 0) {
+        updateSummaryBadge();
+      }
+    }
+  };
+
+  const initLanguage = async () => {
+    const browserLang = (navigator.language || 'en').split('-')[0];
+    const lang = browserLang === 'fa' ? 'fa' : (browserLang === 'zh' ? 'zh' : 'en');
+    langSwitcher.value = lang;
+    await setLanguage(lang);
+  };
+
+  // --- Template Loading ---
+  const fetchTemplate = async () => {
+    try {
+      const response = await fetch('sing-box-template.json.tpl');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn('Template fetch failed, using internal fallback template:', error);
+      return null;
+    }
+  };
+
+  // --- Node Table & Summary UI ---
+  const updateSummaryBadge = () => {
+    const total = normalizedNodes.length;
+    const enabled = normalizedNodes.filter(n => n.enabled).length;
+    const startingPort = parseInt(startPortInput.value, 10) || 10808;
+    const endPort = startingPort + Math.max(0, total - 1);
+
+    const totalLabel = langData.summaryTotalNodes || 'Total';
+    const enabledLabel = langData.summaryEnabledNodes || 'Enabled';
+    const rangeLabel = langData.summaryPortRange || 'Port Range';
+
+    nodesSummaryBadge.innerHTML = `
+      <span class="text-blue-600 dark:text-blue-400 font-semibold">${totalLabel}: ${total}</span> &bull; 
+      <span class="text-emerald-600 dark:text-emerald-400 font-semibold">${enabledLabel}: ${enabled}</span> &bull; 
+      <span class="text-slate-500">${rangeLabel}: ${startingPort} - ${endPort}</span>
+    `;
+  };
+
+  const renderNodeTable = () => {
+    nodesTableBody.innerHTML = '';
+    if (normalizedNodes.length === 0) {
+      nodesTableSection.classList.add('hidden');
+      generateBtn.disabled = true;
+      generateBtn.textContent = langData.generateBtnDisabled || 'Please import proxy nodes first';
+      return;
+    }
+
+    nodesTableSection.classList.remove('hidden');
+    generateBtn.disabled = false;
+    generateBtn.textContent = langData.generateBtn || 'Generate Configuration';
+    updateSummaryBadge();
+
+    normalizedNodes.forEach((node, index) => {
+      const row = document.createElement('tr');
+      row.className = node.enabled ? 'hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors' : 'opacity-50 bg-slate-50/50 dark:bg-slate-900/30';
+      row.dataset.nodeId = node.id;
+
+      const typeUpper = (node.type || 'vless').toUpperCase();
+      const typeBadgeClass = node.type === 'vless' 
+        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+
+      row.innerHTML = `
+        <td class="p-3 text-center font-mono text-xs text-slate-400 dark:text-slate-500 font-bold">${node.displayIndex}</td>
+        <td class="p-3">
+          <div class="font-medium text-slate-800 dark:text-slate-200 truncate max-w-xs md:max-w-md" title="${node.originalTag}">${node.originalTag}</div>
+          <div class="text-xs text-slate-400 dark:text-slate-500 font-mono truncate">${node.rawOutbound.server || 'unknown'}:${node.rawOutbound.server_port || ''}</div>
+        </td>
+        <td class="p-3">
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold font-mono border ${typeBadgeClass}">
+            ${typeUpper}
+          </span>
+        </td>
+        <td class="p-3 text-center">
+          <input type="checkbox" ${node.enabled ? 'checked' : ''} class="node-enabled-checkbox w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+        </td>
+        <td class="p-3">
+          <input type="number" min="1" max="65535" value="${node.port}" ${node.enabled ? '' : 'disabled'} class="node-port-input w-full p-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </td>
+        <td class="p-3">
+          <span class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-800">${node.outboundTag}</span>
+        </td>
+      `;
+
+      nodesTableBody.appendChild(row);
+    });
+  };
+
+  // --- Process Input Data ---
+  const handleRawText = (text) => {
+    const trimmed = text ? text.trim() : '';
+    if (!trimmed) {
+      resetState();
+      return;
+    }
+
+    try {
+      rawOutbounds = parseInput(trimmed);
+      const startingPort = parseInt(startPortInput.value, 10) || 10808;
+      const listenAddress = listenAddressInput.value.trim() || '127.0.0.1';
+      normalizedNodes = normalizeNodes(rawOutbounds, startingPort, listenAddress);
+      renderNodeTable();
+    } catch (err) {
+      console.warn('Input parsing warning:', err.message);
+      resetState();
+      alert(langData.errorInvalidJSON || err.message);
+    }
+  };
+
+  const resetState = () => {
+    rawOutbounds = [];
+    normalizedNodes = [];
+    currentGeneratedConfig = null;
+    nodesTableSection.classList.add('hidden');
+    outputSection.classList.add('hidden');
+    generateBtn.disabled = true;
+    generateBtn.textContent = langData.generateBtnDisabled || 'Please import proxy nodes first';
+  };
+
+  // --- Subscription Direct Fetch (Privacy-First) ---
+  const fetchSubscription = async (url) => {
+    if (!url || !url.startsWith('http')) {
+      alert('Please enter a valid HTTP/HTTPS subscription URL.');
+      return;
+    }
+
+    setLoading(true, langData.loadingSubscription || 'Fetching subscription directly...');
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json, text/plain, */*'
+        }
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      nodesInput.value = text;
+      handleRawText(text);
+    } catch (error) {
+      console.error('Direct subscription fetch error:', error);
+      alert(langData.errorSubscriptionFetch || 'Error: Direct subscription fetch failed. The remote server may block CORS or the URL is invalid.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Generate Configuration ---
+  const handleGenerate = () => {
+    if (normalizedNodes.length === 0) return;
+
+    const enabledNodes = normalizedNodes.filter(n => n.enabled);
+    if (enabledNodes.length === 0) {
+      alert(langData.errorNoEnabledNodes || 'Error: At least one proxy node must be enabled.');
+      return;
+    }
+
+    const portCheck = validatePorts(normalizedNodes);
+    if (!portCheck.valid) {
+      if (portCheck.error === 'duplicate_port') {
+        alert(langData.errorPortDuplicate || portCheck.message);
+      } else {
+        alert(langData.errorPortInvalid || portCheck.message);
+      }
+      return;
+    }
+
+    try {
+      const listenAddress = listenAddressInput.value.trim() || '127.0.0.1';
+      const bootstrapDns = bootstrapDnsSelect.value;
+      const remoteDns = remoteDnsSelect.value;
+      const dnsStrategy = dnsStrategySelect.value;
+      const logLevel = logLevelSelect.value;
+
+      currentGeneratedConfig = generateConfig({
+        normalizedNodes,
+        template: singBoxTemplate,
+        bootstrapDns,
+        remoteDns,
+        dnsStrategy,
+        logLevel,
+        listenAddress
+      });
+
+      // Output JSON formatting
+      const jsonStr = JSON.stringify(currentGeneratedConfig, null, 2);
+      configOutput.value = jsonStr;
+      outputSection.classList.remove('hidden');
+
+      // Run validation & display mapping summary
+      runValidationAndRenderSummary();
+
+      // Scroll smoothly to output
+      outputSection.scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      alert(`Generation failed: ${err.message}`);
+    }
+  };
+
+  // --- Validation & Summary Display ---
+  const runValidationAndRenderSummary = () => {
+    if (!currentGeneratedConfig) return;
+
+    const validation = validateGeneratedConfig(currentGeneratedConfig, normalizedNodes);
+
+    if (validation.valid) {
+      validationCard.className = 'p-4 rounded-xl text-sm font-medium border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 flex items-center justify-between';
+      validationCard.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>${langData.validationPassed || '✓ Structural Validation Passed: Configuration is strictly compliant with sing-box 1.13.18.'}</span>
+        </div>
+        <span class="text-xs font-mono bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded">1:1 Port Isolation Verified</span>
+      `;
+    } else {
+      validationCard.className = 'p-4 rounded-xl text-sm font-medium border bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800';
+      validationCard.innerHTML = `
+        <div class="flex items-center gap-2 mb-2 font-bold">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>${langData.validationFailed || '✕ Structural Validation Failed:'}</span>
+        </div>
+        <ul class="list-disc list-inside text-xs space-y-1">
+          ${validation.errors.map(e => `<li>${e}</li>`).join('')}
+        </ul>
+      `;
+    }
+
+    // Render Mapping Summary
+    const enabledNodes = normalizedNodes.filter(n => n.enabled);
+    summaryMappingList.innerHTML = '';
+
+    enabledNodes.forEach(node => {
+      const item = document.createElement('div');
+      item.className = 'p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-700 dark:text-slate-300';
+      item.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-blue-600 dark:text-blue-400">${node.listenAddress}:${node.port}</span>
+          <span class="text-slate-400">&rarr;</span>
+          <span class="font-semibold text-slate-800 dark:text-slate-100">${node.originalTag}</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-400">
+          <span>Inbound: <code class="text-slate-600 dark:text-slate-300">${node.inboundTag}</code></span>
+          <span>&bull;</span>
+          <span>Outbound: <code class="text-purple-600 dark:text-purple-400">${node.outboundTag}</code></span>
+          <span>&bull;</span>
+          <span>DNS: <code class="text-emerald-600 dark:text-emerald-400">${node.dnsTag}</code></span>
+        </div>
+      `;
+      summaryMappingList.appendChild(item);
+    });
+
+    const infoFooter = document.createElement('div');
+    infoFooter.className = 'mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap justify-between gap-2';
+    infoFooter.innerHTML = `
+      <span><strong>Bootstrap DNS:</strong> <code>local_dns</code> (${bootstrapDnsSelect.value}) via direct</span>
+      <span><strong>Route Final:</strong> <code>block</code> (Zero silent leaks)</span>
+      <span><strong>DNS Strategy:</strong> <code>${dnsStrategySelect.value}</code></span>
+    `;
+    summaryMappingList.appendChild(infoFooter);
+  };
+
+  // --- Event Listeners ---
+  langSwitcher.addEventListener('change', (e) => setLanguage(e.target.value));
+
+  nodesInput.addEventListener('input', (e) => handleRawText(e.target.value));
+
+  clearInputBtn.addEventListener('click', () => {
+    nodesInput.value = '';
+    resetState();
+  });
+
+  fetchSubBtn.addEventListener('click', () => {
+    const url = subscriptionUrlInput.value.trim();
+    if (url) fetchSubscription(url);
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        nodesInput.value = event.target.result;
+        handleRawText(event.target.result);
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  // Drag and drop support
+  nodesInput.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    nodesInput.classList.add('drag-over');
+  });
+  nodesInput.addEventListener('dragleave', () => {
+    nodesInput.classList.remove('drag-over');
+  });
+  nodesInput.addEventListener('drop', (e) => {
+    e.preventDefault();
+    nodesInput.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        nodesInput.value = event.target.result;
+        handleRawText(event.target.result);
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  // Starting port batch allocation
+  startPortInput.addEventListener('input', () => {
+    const startingPort = parseInt(startPortInput.value, 10) || 10808;
+    normalizedNodes.forEach((node, index) => {
+      node.port = startingPort + index;
+    });
+    renderNodeTable();
+  });
+
+  // Listen address change
+  listenAddressInput.addEventListener('input', () => {
+    const addr = listenAddressInput.value.trim() || '127.0.0.1';
+    normalizedNodes.forEach(node => {
+      node.listenAddress = addr;
+    });
+  });
+
+  // Table row events (checkbox toggle & individual port change)
+  nodesTableBody.addEventListener('change', (e) => {
+    const row = e.target.closest('tr');
+    if (!row) return;
+    const nodeId = row.dataset.nodeId;
+    const node = normalizedNodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    if (e.target.classList.contains('node-enabled-checkbox')) {
+      node.enabled = e.target.checked;
+      renderNodeTable();
+    }
+  });
+
+  nodesTableBody.addEventListener('input', (e) => {
+    const row = e.target.closest('tr');
+    if (!row) return;
+    const nodeId = row.dataset.nodeId;
+    const node = normalizedNodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    if (e.target.classList.contains('node-port-input')) {
+      node.port = parseInt(e.target.value, 10);
+      const portCheck = validatePorts(normalizedNodes);
+      if (!portCheck.valid) {
+        e.target.classList.add('border-red-500', 'focus:ring-red-500');
+      } else {
+        document.querySelectorAll('.node-port-input').forEach(inp => {
+          inp.classList.remove('border-red-500', 'focus:ring-red-500');
+        });
+      }
+    }
+  });
+
+  generateBtn.addEventListener('click', handleGenerate);
+  validateBtn.addEventListener('click', runValidationAndRenderSummary);
+
+  copyBtn.addEventListener('click', () => {
+    configOutput.select();
+    navigator.clipboard.writeText(configOutput.value).then(() => {
+      copyBtn.textContent = langData.copiedBtn || 'Copied!';
+      setTimeout(() => {
+        copyBtn.textContent = langData.copyBtn || 'Copy';
+      }, 2000);
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!configOutput.value) return;
+    const blob = new Blob([configOutput.value], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'config.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // --- Initial Load ---
+  await initLanguage();
+  singBoxTemplate = await fetchTemplate();
 });

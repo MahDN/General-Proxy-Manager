@@ -3,144 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">Sing-Box Multi-port Config Generator</title>
+    <title data-lang="appTitle">General Proxy Manager</title>
+    <meta name="description" content="Multi-port Local Gateway and General Proxy Manager for sing-box 1.13.18.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Roboto and Roboto Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* Applying custom fonts */
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Outfit', sans-serif;
+        }
+        body[dir="rtl"] {
+            font-family: 'Vazirmatn', sans-serif;
         }
         .font-mono {
             font-family: 'Roboto Mono', monospace;
         }
-        /* Simple transition for better UX */
-        .transition-all {
-            transition: all 0.3s ease-in-out;
+        [dir="rtl"] .font-mono {
+            direction: ltr;
         }
-        /* Custom scrollbar for textareas */
+        .transition-all {
+            transition: all 0.2s ease-in-out;
+        }
         textarea::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
-        /* Light Theme Scrollbar */
         textarea::-webkit-scrollbar-track {
-            background: #f8fafc; /* slate-50 */
+            background: #f8fafc;
         }
         textarea::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1; /* slate-300 */
+            background-color: #cbd5e1;
             border-radius: 4px;
-            border: 2px solid #f8fafc; /* slate-50 */
         }
-        textarea::-webkit-scrollbar-thumb:hover {
-            background-color: #94a3b8; /* slate-400 */
-        }
-        /* Dark Theme Scrollbar */
         .dark textarea::-webkit-scrollbar-track {
-            background: #1e293b; /* slate-800 */
+            background: #1e293b;
         }
         .dark textarea::-webkit-scrollbar-thumb {
-            background-color: #475569; /* slate-600 */
-            border-color: #1e293b; /* slate-800 */
+            background-color: #475569;
         }
-        .dark textarea::-webkit-scrollbar-thumb:hover {
-            background-color: #64748b; /* slate-500 */
-        }
-        /* Drag-over effect */
         .drag-over {
             border-style: dashed !important;
-            border-color: #3b82f6 !important; /* blue-500 */
+            border-color: #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.05) !important;
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen py-8">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+    <div class="container mx-auto px-4 md:px-8 max-w-5xl">
         
         <!-- Header -->
-        <header class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold" data-lang="appTitle">Sing-Box Multi-port Config Generator</h1>
-            <div class="flex items-center gap-4">
-                <a href="https://t.hotrue.cc/" aria-label="Homepage" class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                </a>
+        <header class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 text-lg">
+                        GP
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent" data-lang="appTitle">General Proxy Manager</h1>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400" data-lang="appSubtitle">Multi-port Local Gateway for sing-box</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-sm" data-lang="targetVersionLabel">
+                    Target Engine: sing-box 1.13.18
+                </span>
+
                 <div class="relative">
-                    <select id="language-switcher" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="zh">简体中文</option>
+                    <select id="language-switcher" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
                         <option value="en">English</option>
+                        <option value="fa">فارسی</option>
+                        <option value="zh">简体中文</option>
                     </select>
                 </div>
+
+                <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" aria-label="GitHub Repository" class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </a>
             </div>
         </header>
 
-        <main class="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 space-y-8">
+        <main class="space-y-6">
             <!-- Loading Overlay -->
-            <div id="loading-overlay" class="absolute inset-0 bg-white/70 dark:bg-gray-800/70 flex items-center justify-center z-50 rounded-xl hidden">
-                <div class="flex items-center gap-3 text-lg font-semibold">
+            <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-200 dark:border-slate-700">
                     <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span data-lang="loadingSubscription">正在加载订阅...</span>
+                    <span class="font-medium text-slate-800 dark:text-slate-200" data-lang="loadingSubscription">Fetching subscription directly...</span>
                 </div>
             </div>
 
-            <!-- Step 1: Input Nodes -->
-            <section>
-                <h2 class="text-xl font-semibold mb-3" data-lang="step1Title">1. 输入节点或订阅</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" data-lang="step1Desc">在此处粘贴 outbounds 数组、JSON 配置或 sing-box 订阅链接。</p>
-                <textarea id="nodes-input" class="font-mono w-full h-48 p-3 bg-gray-50 dark:bg-gray-700 border-2 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="[&#10;  {&#10;    &quot;tag&quot;: &quot;proxy-1&quot;,&#10;    ...&#10;  }&#10;]&#10;... or https://example.com/subscription"></textarea>
-                <div class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                     <label for="file-input" class="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline" data-lang="uploadFile">选择文件</label>
-                     <span data-lang="dropHint">或拖拽文件到上方文本框</span>
-                     <input type="file" id="file-input" class="hidden" accept=".txt,.json">
-                </div>
-            </section>
-
-            <!-- Step 2: Configure Ports -->
-            <section id="config-section">
-                <h2 class="text-xl font-semibold mb-3" data-lang="step2Title">2. 配置端口和默认节点</h2>
-                <div id="config-content" class="hidden">
-                    <div class="mb-4">
-                        <label for="start-port" class="block font-medium mb-2" data-lang="startPortLabel">起始端口号</label>
-                        <input type="number" id="start-port" value="50000" class="w-full md:w-1/3 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div id="nodes-list" class="space-y-3">
-                        <!-- Node list will be dynamically inserted here -->
+            <!-- STEP 1: Import Proxy Nodes -->
+            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white" data-lang="step1Title">
+                            1. Import Proxy Nodes
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" data-lang="step1Desc">
+                            Paste your outbounds array, full sing-box JSON configuration, or upload a config file.
+                        </p>
                     </div>
                 </div>
-            </section>
 
-            <!-- Step 3: Generate and Output -->
-            <section>
-                <h2 class="text-xl font-semibold mb-3" data-lang="step3Title">3. 生成配置文件</h2>
-                <button id="generate-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all" disabled data-lang="generateBtn">请先输入节点信息</button>
-                
-                <div id="output-section" class="hidden mt-6">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-semibold" data-lang="outputPreview">配置预览</h3>
-                        <div>
-                            <button id="copy-btn" class="bg-gray-200 dark:bg-gray-600 text-sm py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-all" data-lang="copyBtn">复制</button>
-                            <button id="download-btn" class="ml-2 bg-green-600 text-white text-sm py-1 px-3 rounded-md hover:bg-green-700 transition-all" data-lang="downloadBtn">下载 config.json</button>
+                <div class="space-y-3">
+                    <textarea id="nodes-input" class="font-mono text-sm w-full h-44 p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="[&#10;  {&#10;    &quot;type&quot;: &quot;vless&quot;,&#10;    &quot;tag&quot;: &quot;Germany-01&quot;,&#10;    &quot;server&quot;: &quot;de.example.com&quot;,&#10;    &quot;server_port&quot;: 443,&#10;    &quot;uuid&quot;: &quot;...&quot;&#10;  }&#10;]"></textarea>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+                        <div class="flex items-center gap-2">
+                            <label for="file-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" data-lang="uploadFile">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <span>Select File</span>
+                            </label>
+                            <span class="text-slate-400 dark:text-slate-500 text-xs md:text-sm" data-lang="dropHint">or drag and drop a config file here</span>
+                            <input type="file" id="file-input" class="hidden" accept=".txt,.json,.conf">
+                        </div>
+
+                        <button id="clear-input-btn" class="text-xs text-slate-400 hover:text-red-500 transition-colors">Clear</button>
+                    </div>
+
+                    <!-- Subscription Fetch Option -->
+                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="url" id="subscription-url-input" class="flex-1 text-sm p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/api/v1/client/subscribe?token=...">
+                            <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
+                        </div>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5" data-lang="corsNotice">
+                            Privacy Notice: Subscriptions are fetched directly in your browser without third-party proxy servers. The subscription provider must permit CORS requests.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Parsed Usable Node Table -->
+                <div id="nodes-table-section" class="hidden pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-base">Imported Usable Proxy Nodes</h3>
+                        <div id="nodes-summary-badge" class="text-xs font-mono bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
-                    <textarea id="config-output" class="font-mono w-full h-64 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" readonly></textarea>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    <th class="p-3 text-center w-12" data-lang="tableHeaderIndex">#</th>
+                                    <th class="p-3" data-lang="tableHeaderName">Node Name</th>
+                                    <th class="p-3 w-28" data-lang="tableHeaderType">Type</th>
+                                    <th class="p-3 text-center w-20" data-lang="tableHeaderEnabled">Enabled</th>
+                                    <th class="p-3 w-32" data-lang="tableHeaderPort">Local Port</th>
+                                    <th class="p-3 w-36" data-lang="tableHeaderOutbound">Outbound Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nodes-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-800">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: Local Proxy Settings -->
+            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
+                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step2Title">
+                    2. Local Proxy Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label for="listen-address" class="block text-sm font-medium mb-1.5" data-lang="listenAddressLabel">Listen Address</label>
+                        <input type="text" id="listen-address" value="127.0.0.1" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="listenAddressHelp">Default 127.0.0.1 (Localhost only for security).</p>
+                    </div>
+                    <div>
+                        <label for="start-port" class="block text-sm font-medium mb-1.5" data-lang="startPortLabel">Starting Port Number</label>
+                        <input type="number" id="start-port" value="10808" min="1" max="65535" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 10808, 10809...</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" data-lang="protocolModeLabel">Inbound Protocol</label>
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span data-lang="protocolModeValue">Mixed (SOCKS5 + HTTP simultaneously)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: DNS Settings -->
+            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
+                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step3Title">
+                    3. DNS Configuration
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label for="bootstrap-dns" class="block text-sm font-medium mb-1.5" data-lang="bootstrapDnsLabel">Bootstrap DNS (local_dns)</label>
+                        <select id="bootstrap-dns" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
+                            <option value="8.8.8.8">8.8.8.8 (Google)</option>
+                            <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
+                            <option value="local">local (System DNS)</option>
+                        </select>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="bootstrapDnsHelp">Directly resolves proxy server domains to prevent DNS loops.</p>
+                    </div>
+
+                    <div>
+                        <label for="remote-dns" class="block text-sm font-medium mb-1.5" data-lang="remoteDnsLabel">Remote Proxy DNS (per-node)</label>
+                        <select id="remote-dns" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
+                            <option value="8.8.8.8">8.8.8.8 (Google)</option>
+                            <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
+                        </select>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="remoteDnsHelp">Queries are detoured strictly through each node's outbound.</p>
+                    </div>
+
+                    <div>
+                        <label for="dns-strategy" class="block text-sm font-medium mb-1.5" data-lang="dnsStrategyLabel">DNS Strategy</label>
+                        <select id="dns-strategy" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="prefer_ipv4">prefer_ipv4 (Default / Recommended)</option>
+                            <option value="prefer_ipv6">prefer_ipv6</option>
+                            <option value="ipv4_only">ipv4_only</option>
+                            <option value="ipv6_only">ipv6_only</option>
+                        </select>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="dnsStrategyHelp">IPv4-first preference avoids IPv6 network failures.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: Advanced Settings -->
+            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
+                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step4Title">
+                    4. Advanced Settings
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="log-level" class="block text-sm font-medium mb-1.5" data-lang="logLevelLabel">Log Level</label>
+                        <select id="log-level" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="warn">warn (Default)</option>
+                            <option value="info">info</option>
+                            <option value="error">error</option>
+                            <option value="debug">debug</option>
+                            <option value="trace">trace</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" data-lang="targetEngineLabel">Target Engine Version</label>
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono text-slate-700 dark:text-slate-300">
+                            sing-box 1.13.18
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 5: Generate and Output -->
+            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-6">
+                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step5Title">
+                    5. Generate & Validate Configuration
+                </h2>
+
+                <button id="generate-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none transition-all text-base" disabled data-lang="generateBtn">
+                    Please import proxy nodes first
+                </button>
+                
+                <div id="output-section" class="hidden space-y-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <!-- Validation Results Card -->
+                    <div id="validation-card" class="p-4 rounded-xl text-sm font-medium border">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Output Summary -->
+                    <div class="bg-slate-50 dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-sm md:text-base flex items-center gap-2" data-lang="outputSummaryTitle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                <span>Mapping Summary & Routing Verification</span>
+                            </h3>
+                            <button id="validate-btn" class="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 font-medium transition-colors" data-lang="validateBtn">
+                                Validate Config
+                            </button>
+                        </div>
+                        <div id="summary-mapping-list" class="space-y-2 text-xs md:text-sm font-mono">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Config Output Preview -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-sm md:text-base" data-lang="outputPreview">Configuration Preview</h3>
+                            <div class="flex items-center gap-2">
+                                <button id="copy-btn" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs md:text-sm py-1.5 px-3.5 rounded-lg font-medium transition-all" data-lang="copyBtn">
+                                    Copy
+                                </button>
+                                <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm py-1.5 px-3.5 rounded-lg font-medium shadow-sm transition-all" data-lang="downloadBtn">
+                                    Download config.json
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="config-output" class="font-mono text-xs md:text-sm w-full h-80 p-4 bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" readonly></textarea>
+                    </div>
                 </div>
             </section>
 
         </main>
 
         <!-- Footer -->
-        <footer class="text-center mt-8">
-            <a href="https://github.com/donald-laird/SingMP-Gen" id="github-link" aria-label="GitHub Repository" class="inline-block text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            </a>
+        <footer class="text-center mt-12 text-xs text-slate-400 dark:text-slate-500 space-y-2">
+            <p>General Proxy Manager &bull; Target: sing-box 1.13.18 &bull; Client-side &amp; Privacy-First</p>
+            <p>
+                <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" class="text-blue-500 hover:underline">GitHub Repository</a>
+            </p>
         </footer>
     </div>
-    <!-- Load main script as a module -->
+
+    <!-- Load main script as an ES module -->
     <script src="main.js" type="module"></script>
 </body>
 </html>

@@ -1,0 +1,20 @@
+{
+  "name": "singmp-gen",
+  "version": "2.0.0",
+  "description": "General Proxy Manager for sing-box 1.13.18 - Multi-port local proxy gateway",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/generator.test.js"
+  },
+  "keywords": [
+    "sing-box",
+    "proxy",
+    "multi-port",
+    "proxy-manager",
+    "socks5",
+    "http-proxy",
+    "vless"
+  ],
+  "author": "MahDN",
+  "license": "MIT"
+}
