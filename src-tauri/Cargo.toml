@@ -1,0 +1,29 @@
+[package]
+name = "general-proxy-manager"
+version = "2.0.0"
+description = "General Proxy Manager for sing-box - Modern multi-port local proxy gateway"
+authors = ["MahDN"]
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "general_proxy_manager_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-process = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["socks", "json"] }
+parking_lot = "0.12"
+winreg = "0.52"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

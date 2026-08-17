@@ -1519,6 +1519,144 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // --- Desktop Engine Controller (Tauri Integration) ---
+  const desktopRunnerController = document.getElementById('desktop-runner-controller');
+  const desktopEngineStatus = document.getElementById('desktop-engine-status');
+  const desktopStartBtn = document.getElementById('desktop-start-btn');
+  const desktopStopBtn = document.getElementById('desktop-stop-btn');
+  const desktopRestartBtn = document.getElementById('desktop-restart-btn');
+  const desktopLogConsole = document.getElementById('desktop-log-console');
+  const clearConsoleLogsBtn = document.getElementById('clear-console-logs-btn');
+
+  const isTauriEnv = () => {
+    return typeof window.__TAURI_INTERNALS__ !== 'undefined' || (typeof window.__TAURI__ !== 'undefined' && typeof window.__TAURI__.core !== 'undefined');
+  };
+
+  const tauriInvoke = async (cmd, args = {}) => {
+    if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {
+      return await window.__TAURI__.core.invoke(cmd, args);
+    }
+    if (window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === 'function') {
+      return await window.__TAURI_INTERNALS__.invoke(cmd, args);
+    }
+    throw new Error('Tauri IPC is not available in browser mode.');
+  };
+
+  const appendConsoleLog = (text) => {
+    if (!desktopLogConsole) return;
+    const now = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'py-0.5';
+    if (text.startsWith('[ERR]')) {
+      entry.className += ' text-red-400 font-semibold';
+    } else if (text.startsWith('[SYSTEM]')) {
+      entry.className += ' text-indigo-400 font-bold';
+    } else if (text.startsWith('[WARNING]')) {
+      entry.className += ' text-amber-400';
+    } else {
+      entry.className += ' text-slate-300';
+    }
+    entry.textContent = `[${now}] ${text}`;
+    desktopLogConsole.appendChild(entry);
+    desktopLogConsole.scrollTop = desktopLogConsole.scrollHeight;
+  };
+
+  const updateEngineStatusUI = (running, pid = null) => {
+    if (!desktopEngineStatus) return;
+    if (running) {
+      desktopEngineStatus.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-950 border border-emerald-800 text-emerald-400 flex items-center gap-1.5';
+      desktopEngineStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${langData?.desktopEngineRunning || '● Running'} ${pid ? `[PID: ${pid}]` : ''}`;
+      if (desktopStartBtn) {
+        desktopStartBtn.disabled = true;
+        desktopStartBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (desktopStopBtn) {
+        desktopStopBtn.disabled = false;
+        desktopStopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    } else {
+      desktopEngineStatus.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-slate-950 border border-slate-800 text-slate-400';
+      desktopEngineStatus.textContent = langData?.desktopEngineStopped || '○ Stopped';
+      if (desktopStartBtn) {
+        desktopStartBtn.disabled = false;
+        desktopStartBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+      if (desktopStopBtn) {
+        desktopStopBtn.disabled = true;
+        desktopStopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  };
+
+  const handleStartEngine = async () => {
+    if (!currentGeneratedConfig) {
+      handleGenerate();
+    }
+    if (!currentGeneratedConfig) {
+      alert('Please import proxy nodes and generate configuration first.');
+      return;
+    }
+
+    const bin = (runnerBinaryPathInput && runnerBinaryPathInput.value.trim()) || 'sing-box.exe';
+    const cfgJson = JSON.stringify(currentGeneratedConfig, null, 2);
+
+    if (isTauriEnv()) {
+      appendConsoleLog(`[SYSTEM] Starting sing-box engine via '${bin}'...`);
+      try {
+        const res = await tauriInvoke('start_singbox_engine', {
+          binaryPath: bin,
+          configJson: cfgJson
+        });
+        updateEngineStatusUI(res.running, res.pid);
+        appendConsoleLog(`[SYSTEM] Engine launched successfully (PID: ${res.pid})`);
+      } catch (err) {
+        appendConsoleLog(`[ERR] Failed to launch engine: ${err}`);
+      }
+    } else {
+      appendConsoleLog(`[SYSTEM] Browser Simulation: Launching local gateway on port ${currentGeneratedConfig.inbounds?.[0]?.listen_port || 20808}...`);
+      updateEngineStatusUI(true, Math.floor(Math.random() * 8000 + 1000));
+      appendConsoleLog(`[INFO] sing-box listening on ${normalizedNodes.filter(n => n.enabled).length} mixed local proxy ports.`);
+    }
+  };
+
+  const handleStopEngine = async () => {
+    if (isTauriEnv()) {
+      try {
+        const res = await tauriInvoke('stop_singbox_engine');
+        updateEngineStatusUI(res.running);
+        appendConsoleLog('[SYSTEM] Engine stopped.');
+      } catch (err) {
+        appendConsoleLog(`[ERR] Failed to stop engine: ${err}`);
+      }
+    } else {
+      updateEngineStatusUI(false);
+      appendConsoleLog('[SYSTEM] Engine stopped.');
+    }
+  };
+
+  if (desktopStartBtn) desktopStartBtn.addEventListener('click', handleStartEngine);
+  if (desktopStopBtn) desktopStopBtn.addEventListener('click', handleStopEngine);
+  if (desktopRestartBtn) {
+    desktopRestartBtn.addEventListener('click', async () => {
+      await handleStopEngine();
+      setTimeout(handleStartEngine, 500);
+    });
+  }
+
+  if (clearConsoleLogsBtn && desktopLogConsole) {
+    clearConsoleLogsBtn.addEventListener('click', () => {
+      desktopLogConsole.innerHTML = '';
+      appendConsoleLog('[SYSTEM] Console cleared.');
+    });
+  }
+
+  // Check Tauri Log Listener
+  if (window.__TAURI__ && window.__TAURI__.event && typeof window.__TAURI__.event.listen === 'function') {
+    window.__TAURI__.event.listen('singbox-log', (event) => {
+      appendConsoleLog(event.payload);
+    });
+  }
+
   // --- Initial Synchronous Startup ---
   initTheme();
   initLanguage();
