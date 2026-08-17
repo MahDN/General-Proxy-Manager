@@ -1,5 +1,10 @@
-CLAUDE.md
+node_modules/
 sing-box.exe
-links.txt
+sing-box
+*.log
+.DS_Store
+runtime-test-config.json
+.agent/
+.agents/
 subscription.txt
-حالا
+links.txt

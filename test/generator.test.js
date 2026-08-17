@@ -475,33 +475,46 @@ test('TEST 24: Generated mixed inbound is valid for sing-box 1.13.18', () => {
   assert.equal(check.success, true, check.error);
 });
 
-test('TEST 25: Parse real vless:// links from links.txt (17 nodes) and validate with sing-box check', () => {
-  const linksContent = fs.readFileSync(path.join(process.cwd(), 'links.txt'), 'utf8');
+const SAMPLE_TEST_VLESS_LINKS = `vless://c55bcf9d-5faf-4a44-b737-7a59ca9d0707@sv7.nonpath.ir:42542?encryption=none&type=http&host=us.demonware.net&path=/&method=GET&packetEncoding=xudp#MagicNet%20VLESS
+vless://c55bcf9d-5faf-4a44-b737-7a59ca9d0707@sv0.nonpath.ir:42542?encryption=none&type=http&host=us.demonware.net&path=/&method=GET&packetEncoding=xudp#MagicNet%20Irancell%201
+vless://c55bcf9d-5faf-4a44-b737-7a59ca9d0707@sv1.mobileemdad.top:443?encryption=none&security=reality&sni=us.demonware.net&fp=edge&pbk=PjR-SM4fOm2fY4mTqWoqZDRyxontvpailM0gBqUxlUQ&sid=cbe2503ffd040d&packetEncoding=xudp#MagicNet%20Germany
+vless://c55bcf9d-5faf-4a44-b737-7a59ca9d0707@pt-play.mobileemdad.top:443?encryption=none&security=reality&sni=us.demonware.net&fp=qq&pbk=PjR-SM4fOm2fY4mTqWoqZDRyxontvpailM0gBqUxlUQ&sid=aefc7f3722&packetEncoding=xudp#MagicNet%20FI`;
+
+test('TEST 25: Parse real vless:// links (multi-node) and validate with sing-box check', () => {
+  let linksContent = SAMPLE_TEST_VLESS_LINKS;
+  const linksPath = path.join(process.cwd(), 'links.txt');
+  if (fs.existsSync(linksPath)) {
+    linksContent = fs.readFileSync(linksPath, 'utf8');
+  }
   const parsed = parseInput(linksContent);
-  assert.equal(parsed.length, 17);
+  assert.ok(parsed.length >= 4);
 
   const normalized = normalizeNodes(parsed, 10808);
-  assert.equal(normalized.length, 17);
+  assert.equal(normalized.length, parsed.length);
 
   const config = generateConfig({ normalizedNodes: normalized });
   const validation = validateGeneratedConfig(config, normalized);
   assert.equal(validation.valid, true, `Validation failed: ${validation.errors.join(', ')}`);
 
-  assert.equal(config.inbounds.length, 17);
-  assert.equal(config.outbounds.length, 19); // 17 proxy outbounds + direct + block
-  assert.equal(config.route.rules.length, 17);
-  assert.equal(config.dns.servers.length, 18); // 17 dns servers + local_dns
+  assert.equal(config.inbounds.length, parsed.length);
+  assert.equal(config.outbounds.length, parsed.length + 2); // proxy outbounds + direct + block
+  assert.equal(config.route.rules.length, parsed.length);
+  assert.equal(config.dns.servers.length, parsed.length + 1); // dns servers + local_dns
 
   const check = runSingBoxCheck(config);
   assert.equal(check.success, true, check.error);
 });
 
 test('TEST 26: Parse Base64 subscription string containing vless:// links', () => {
-  const rawLinks = fs.readFileSync(path.join(process.cwd(), 'links.txt'), 'utf8');
+  let rawLinks = SAMPLE_TEST_VLESS_LINKS;
+  const linksPath = path.join(process.cwd(), 'links.txt');
+  if (fs.existsSync(linksPath)) {
+    rawLinks = fs.readFileSync(linksPath, 'utf8');
+  }
   const base64Content = Buffer.from(rawLinks, 'utf8').toString('base64');
 
   const parsed = parseInput(base64Content);
-  assert.equal(parsed.length, 17);
+  assert.ok(parsed.length >= 4);
 
   const normalized = normalizeNodes(parsed, 10808);
   const config = generateConfig({ normalizedNodes: normalized });

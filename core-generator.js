@@ -234,6 +234,14 @@ export function normalizeNodes(rawOutbounds, startingPort = 10808, listenAddress
     const padded = padIndex(num);
     const originalTag = (rawNode && rawNode.tag) ? String(rawNode.tag) : `node-${padded}`;
     const type = (rawNode && rawNode.type) ? String(rawNode.type).toLowerCase() : 'vless';
+    const clonedOutbound = deepClone(rawNode || {});
+
+    // Sanitize unsupported xhttp / splithttp transport for sing-box 1.13.18
+    let warning = null;
+    if (clonedOutbound.transport && (clonedOutbound.transport.type === 'xhttp' || clonedOutbound.transport.type === 'splithttp')) {
+      clonedOutbound.transport.type = 'http';
+      warning = 'Transport xhttp was converted to http for sing-box 1.13.18 compatibility';
+    }
 
     return {
       id: `node-${padded}`,
@@ -247,7 +255,8 @@ export function normalizeNodes(rawOutbounds, startingPort = 10808, listenAddress
       port: startingPort + idx,
       listenAddress: listenAddress || '127.0.0.1',
       enabled: true,
-      rawOutbound: deepClone(rawNode)
+      warning,
+      rawOutbound: clonedOutbound
     };
   });
 }
@@ -377,8 +386,7 @@ export function generateConfig({
     dnsServers.push({
       tag: 'local_dns',
       type: 'udp',
-      server: bootstrapDns || '1.1.1.1',
-      detour: 'direct'
+      server: bootstrapDns || '1.1.1.1'
     });
   }
 

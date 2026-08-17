@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,326 +7,970 @@
     <meta name="description" content="Multi-port Local Gateway and General Proxy Manager for sing-box 1.13.18.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Roboto and Roboto Mono -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        dark: {
+                            950: '#070b14',
+                            900: '#0c1322',
+                            850: '#111a2e',
+                            800: '#17223b',
+                            700: '#233252',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'IBM Plex Sans', 'sans-serif'],
+                        farsi: ['Vazirmatn', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Roboto Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', 'IBM Plex Sans', sans-serif;
+            background-color: #070b14;
+            color: #f1f5f9;
         }
         body[dir="rtl"] {
             font-family: 'Vazirmatn', sans-serif;
         }
         .font-mono {
-            font-family: 'Roboto Mono', monospace;
+            font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
         }
         [dir="rtl"] .font-mono {
             direction: ltr;
+            text-align: left;
         }
-        .transition-all {
-            transition: all 0.2s ease-in-out;
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
         }
-        textarea::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        .glass-card {
+            background: rgba(23, 34, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
         }
-        textarea::-webkit-scrollbar-track {
-            background: #f8fafc;
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.5);
         }
-        textarea::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .dark textarea::-webkit-scrollbar-track {
-            background: #1e293b;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0c1322;
         }
-        .dark textarea::-webkit-scrollbar-thumb {
-            background-color: #475569;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #233252;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #4f46e5;
         }
         .drag-over {
-            border-style: dashed !important;
-            border-color: #3b82f6 !important;
-            background-color: rgba(59, 130, 246, 0.05) !important;
+            border-color: #6366f1 !important;
+            background-color: rgba(99, 102, 241, 0.08) !important;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        /* Smooth transitions for theme switching */
+        body, .glass-panel, .glass-card, header, input, textarea, select, table, tr, th, td {
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* Light Mode Styling */
+        html:not(.dark) body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        html:not(.dark) .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        }
+        html:not(.dark) .glass-card {
+            background: rgba(248, 250, 252, 0.95);
+            border-color: rgba(226, 232, 240, 0.9);
+        }
+        html:not(.dark) header {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(226, 232, 240, 0.9);
+        }
+        html:not(.dark) .bg-slate-900, 
+        html:not(.dark) .bg-slate-900\/90, 
+        html:not(.dark) .bg-slate-900\/80 {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+        html:not(.dark) .bg-slate-950, 
+        html:not(.dark) .bg-slate-950\/60, 
+        html:not(.dark) .bg-slate-950\/40, 
+        html:not(.dark) .bg-slate-950\/80 {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+        }
+        html:not(.dark) .bg-slate-800, 
+        html:not(.dark) .bg-slate-850 {
+            background-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        html:not(.dark) .border-slate-800, 
+        html:not(.dark) .border-slate-800\/80, 
+        html:not(.dark) .border-slate-800\/60 {
+            border-color: #e2e8f0 !important;
+        }
+        html:not(.dark) .border-slate-700, 
+        html:not(.dark) .border-slate-700\/80 {
+            border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) input, 
+        html:not(.dark) textarea:not(#config-output):not(#edit-node-raw-json), 
+        html:not(.dark) select {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) .text-white {
+            color: #0f172a !important;
+        }
+        html:not(.dark) .text-slate-200 {
+            color: #1e293b !important;
+        }
+        html:not(.dark) .text-slate-300 {
+            color: #334155 !important;
+        }
+        html:not(.dark) .text-slate-400 {
+            color: #64748b !important;
+        }
+        html:not(.dark) thead {
+            background-color: #f1f5f9 !important;
+            color: #475569 !important;
+        }
+        html:not(.dark) tr:hover {
+            background-color: rgba(241, 245, 249, 0.8) !important;
+        }
+        html:not(.dark) #config-output, 
+        html:not(.dark) #edit-node-raw-json {
+            background-color: #0f172a !important;
+            color: #38bdf8 !important;
+        }
+        html:not(.dark) #full-runner-cmd, 
+        html:not(.dark) #run-command-preview {
+            background-color: #0f172a !important;
+            color: #34d399 !important;
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen py-8">
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white pb-12">
 
-    <div class="container mx-auto px-4 md:px-8 max-w-5xl">
-        
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
-            <div>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 text-lg">
+    <!-- Top Sticky Header & Navigation -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 shadow-lg shadow-black/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                
+                <!-- Brand / Logo -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white font-extrabold shadow-lg shadow-indigo-500/25 ring-1 ring-white/20 text-lg">
                         GP
                     </div>
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent" data-lang="appTitle">General Proxy Manager</h1>
-                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400" data-lang="appSubtitle">Multi-port Local Gateway for sing-box</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-3">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-sm" data-lang="targetVersionLabel">
-                    Target Engine: sing-box 1.13.18
-                </span>
-
-                <div class="relative">
-                    <select id="language-switcher" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-                        <option value="en">English</option>
-                        <option value="fa">فارسی</option>
-                        <option value="zh">简体中文</option>
-                    </select>
-                </div>
-
-                <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" aria-label="GitHub Repository" class="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                </a>
-            </div>
-        </header>
-
-        <main class="space-y-6">
-            <!-- Loading Overlay -->
-            <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-200 dark:border-slate-700">
-                    <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="font-medium text-slate-800 dark:text-slate-200" data-lang="loadingSubscription">Fetching subscription directly...</span>
-                </div>
-            </div>
-
-            <!-- STEP 1: Import Proxy Nodes -->
-            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div>
-                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white" data-lang="step1Title">
-                            1. Import Proxy Nodes
-                        </h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" data-lang="step1Desc">
-                            Paste your outbounds array, full sing-box JSON configuration, or upload a config file.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <textarea id="nodes-input" class="font-mono text-sm w-full h-44 p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="[&#10;  {&#10;    &quot;type&quot;: &quot;vless&quot;,&#10;    &quot;tag&quot;: &quot;Germany-01&quot;,&#10;    &quot;server&quot;: &quot;de.example.com&quot;,&#10;    &quot;server_port&quot;: 443,&#10;    &quot;uuid&quot;: &quot;...&quot;&#10;  }&#10;]"></textarea>
-
-                    <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
                         <div class="flex items-center gap-2">
-                            <label for="file-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" data-lang="uploadFile">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                <span>Select File</span>
-                            </label>
-                            <span class="text-slate-400 dark:text-slate-500 text-xs md:text-sm" data-lang="dropHint">or drag and drop a config file here</span>
-                            <input type="file" id="file-input" class="hidden" accept=".txt,.json,.conf">
+                            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight" data-lang="appTitle">General Proxy Manager</h1>
+                            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0</span>
                         </div>
-
-                        <button id="clear-input-btn" class="text-xs text-slate-400 hover:text-red-500 transition-colors">Clear</button>
-                    </div>
-
-                    <!-- Subscription Fetch Option -->
-                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="url" id="subscription-url-input" class="flex-1 text-sm p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/api/v1/client/subscribe?token=...">
-                            <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="use-cors-proxy" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
-                            <label for="use-cors-proxy" class="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none" data-lang="useCorsProxyLabel">
-                                Use third-party CORS proxy fallback (if direct connection fails or CORS is blocked)
-                            </label>
-                        </div>
-                        <p class="text-xs text-slate-400 dark:text-slate-500" data-lang="corsNotice">
-                            Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway.
-                        </p>
+                        <p class="text-xs text-slate-400 hidden md:block" data-lang="appSubtitle">Multi-port Local Gateway for sing-box</p>
                     </div>
                 </div>
 
-                <!-- Parsed Usable Node Table -->
-                <div id="nodes-table-section" class="hidden pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-base">Imported Usable Proxy Nodes</h3>
-                        <div id="nodes-summary-badge" class="text-xs font-mono bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            <!-- Populated dynamically -->
-                        </div>
+                <!-- Navigation Tabs (Centered / Floating) -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-inner">
+                    <button id="tab-btn-generator" class="dashboard-tab-btn active px-4 py-1.5 text-xs font-semibold rounded-lg text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition-all flex items-center gap-2" data-tab="tab-generator">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 9h6"/><path d="M15 15h6"/></svg>
+                        <span data-lang="tabGenerator">Config Generator</span>
+                    </button>
+                    <button id="tab-btn-testing" class="dashboard-tab-btn px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-2" data-tab="tab-testing">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        <span data-lang="tabConnectionTest">Connection & IP Test</span>
+                    </button>
+                    <button id="tab-btn-runner" class="dashboard-tab-btn px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center gap-2" data-tab="tab-runner">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span data-lang="tabRunnerConsole">Runner & Console</span>
+                    </button>
+                </nav>
+
+                <!-- Right Controls: Target Chip, Theme, Language, GitHub -->
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-800">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-subtle"></span>
+                        <span data-lang="targetVersionLabel">sing-box 1.13.18</span>
                     </div>
 
-                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
-                                <tr>
-                                    <th class="p-3 text-center w-12" data-lang="tableHeaderIndex">#</th>
-                                    <th class="p-3" data-lang="tableHeaderName">Node Name</th>
-                                    <th class="p-3 w-28" data-lang="tableHeaderType">Type</th>
-                                    <th class="p-3 text-center w-20" data-lang="tableHeaderEnabled">Enabled</th>
-                                    <th class="p-3 w-32" data-lang="tableHeaderPort">Local Port</th>
-                                    <th class="p-3 w-36" data-lang="tableHeaderOutbound">Outbound Tag</th>
-                                </tr>
-                            </thead>
-                            <tbody id="nodes-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-800">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+                    <!-- Theme Switcher (Dark / Light) -->
+                    <button id="theme-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-700/80 transition-all shadow-sm flex items-center justify-center" title="Toggle Theme" aria-label="Toggle Theme">
+                        <svg id="theme-icon-sun" class="w-4 h-4 text-amber-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg id="theme-icon-moon" class="w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
 
-            <!-- STEP 2: Local Proxy Settings -->
-            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
-                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step2Title">
-                    2. Local Proxy Settings
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <div>
-                        <label for="listen-address" class="block text-sm font-medium mb-1.5" data-lang="listenAddressLabel">Listen Address</label>
-                        <input type="text" id="listen-address" value="127.0.0.1" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="listenAddressHelp">Default 127.0.0.1 (Localhost only for security).</p>
-                    </div>
-                    <div>
-                        <label for="start-port" class="block text-sm font-medium mb-1.5" data-lang="startPortLabel">Starting Port Number</label>
-                        <input type="number" id="start-port" value="10808" min="1" max="65535" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 10808, 10809...</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1.5" data-lang="protocolModeLabel">Inbound Protocol</label>
-                        <div class="p-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                            <span data-lang="protocolModeValue">Mixed (SOCKS5 + HTTP simultaneously)</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- STEP 3: DNS Settings -->
-            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
-                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step3Title">
-                    3. DNS Configuration
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <div>
-                        <label for="bootstrap-dns" class="block text-sm font-medium mb-1.5" data-lang="bootstrapDnsLabel">Bootstrap DNS (local_dns)</label>
-                        <select id="bootstrap-dns" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
-                            <option value="8.8.8.8">8.8.8.8 (Google)</option>
-                            <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
-                            <option value="local">local (System DNS)</option>
-                        </select>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="bootstrapDnsHelp">Directly resolves proxy server domains to prevent DNS loops.</p>
-                    </div>
-
-                    <div>
-                        <label for="remote-dns" class="block text-sm font-medium mb-1.5" data-lang="remoteDnsLabel">Remote Proxy DNS (per-node)</label>
-                        <select id="remote-dns" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
-                            <option value="8.8.8.8">8.8.8.8 (Google)</option>
-                            <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
-                        </select>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="remoteDnsHelp">Queries are detoured strictly through each node's outbound.</p>
-                    </div>
-
-                    <div>
-                        <label for="dns-strategy" class="block text-sm font-medium mb-1.5" data-lang="dnsStrategyLabel">DNS Strategy</label>
-                        <select id="dns-strategy" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="prefer_ipv4">prefer_ipv4 (Default / Recommended)</option>
-                            <option value="prefer_ipv6">prefer_ipv6</option>
-                            <option value="ipv4_only">ipv4_only</option>
-                            <option value="ipv6_only">ipv6_only</option>
-                        </select>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" data-lang="dnsStrategyHelp">IPv4-first preference avoids IPv6 network failures.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- STEP 4: Advanced Settings -->
-            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-5">
-                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step4Title">
-                    4. Advanced Settings
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label for="log-level" class="block text-sm font-medium mb-1.5" data-lang="logLevelLabel">Log Level</label>
-                        <select id="log-level" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="warn">warn (Default)</option>
-                            <option value="info">info</option>
-                            <option value="error">error</option>
-                            <option value="debug">debug</option>
-                            <option value="trace">trace</option>
+                    <!-- Language Switcher -->
+                    <div class="relative">
+                        <select id="language-switcher" class="bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-700/80 rounded-lg py-1.5 px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-sm">
+                            <option value="en">English</option>
+                            <option value="fa">فارسی</option>
+                            <option value="zh">简体中文</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1.5" data-lang="targetEngineLabel">Target Engine Version</label>
-                        <div class="p-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono text-slate-700 dark:text-slate-300">
-                            sing-box 1.13.18
-                        </div>
-                    </div>
+
+                    <!-- GitHub Repository Link -->
+                    <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" aria-label="GitHub Repository" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
                 </div>
-            </section>
+            </div>
 
-            <!-- STEP 5: Generate and Output -->
-            <section class="bg-white dark:bg-slate-800/90 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 p-6 md:p-8 space-y-6">
-                <h2 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white" data-lang="step5Title">
-                    5. Generate & Validate Configuration
-                </h2>
-
-                <button id="generate-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none transition-all text-base" disabled data-lang="generateBtn">
-                    Please import proxy nodes first
+            <!-- Mobile Navigation Bar -->
+            <div class="flex md:hidden items-center justify-around py-2 border-t border-slate-800/60 mt-1">
+                <button class="mobile-tab-btn active text-xs font-semibold text-indigo-400 flex items-center gap-1.5 py-1" data-tab="tab-generator">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                    <span data-lang="tabGenerator">Generator</span>
                 </button>
+                <button class="mobile-tab-btn text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 py-1" data-tab="tab-testing">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span data-lang="tabConnectionTest">Test</span>
+                </button>
+                <button class="mobile-tab-btn text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 py-1" data-tab="tab-runner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span data-lang="tabRunnerConsole">Runner</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+            <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700/80 max-w-sm w-full mx-4">
+                <svg class="animate-spin h-7 w-7 text-indigo-500 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="loading-msg" class="font-medium text-sm text-slate-200" data-lang="loadingSubscription">Fetching subscription directly...</span>
+            </div>
+        </div>
+
+        <!-- KPI Status Bar -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400" data-lang="summaryTotalNodes">Total Nodes</p>
+                    <p id="kpi-total-nodes" class="text-xl sm:text-2xl font-bold text-white font-mono mt-0.5">0</p>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400" data-lang="summaryEnabledNodes">Enabled Nodes</p>
+                    <p id="kpi-enabled-nodes" class="text-xl sm:text-2xl font-bold text-emerald-400 font-mono mt-0.5">0</p>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400" data-lang="summaryPortRange">Port Range</p>
+                    <p id="kpi-port-range" class="text-sm sm:text-base font-bold text-blue-400 font-mono mt-1">10808 - 10808</p>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400" data-lang="summaryRouteFinal">Route Final Policy</p>
+                    <p class="text-xs sm:text-sm font-bold text-purple-400 font-mono mt-1">Block (1:1 Strict)</p>
+                </div>
+                <div class="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: CONFIG GENERATOR & LIVE NODE STUDIO                     -->
+        <!-- ============================================================== -->
+        <div id="tab-generator" class="tab-pane space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
-                <div id="output-section" class="hidden space-y-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <!-- Validation Results Card -->
-                    <div id="validation-card" class="p-4 rounded-xl text-sm font-medium border">
-                        <!-- Populated dynamically -->
-                    </div>
-
-                    <!-- Output Summary -->
-                    <div class="bg-slate-50 dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                <!-- Main Workspace (8 Cols) -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- 1. Import Proxy Nodes Card -->
+                    <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
                         <div class="flex items-center justify-between">
-                            <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-sm md:text-base flex items-center gap-2" data-lang="outputSummaryTitle">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                                <span>Mapping Summary & Routing Verification</span>
-                            </h3>
-                            <button id="validate-btn" class="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 font-medium transition-colors" data-lang="validateBtn">
-                                Validate Config
-                            </button>
+                            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2.5" data-lang="step1Title">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">01</span>
+                                <span>Import Proxy Nodes</span>
+                            </h2>
+                            <button id="clear-input-btn" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">Clear All</button>
                         </div>
-                        <div id="summary-mapping-list" class="space-y-2 text-xs md:text-sm font-mono">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
+                        <p class="text-xs text-slate-400" data-lang="step1Desc">
+                            Paste your outbounds array, full sing-box JSON configuration, VLESS share links, or subscription URL.
+                        </p>
 
-                    <!-- Config Output Preview -->
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-semibold text-slate-800 dark:text-slate-200 text-sm md:text-base" data-lang="outputPreview">Configuration Preview</h3>
+                        <!-- Input Textarea -->
+                        <div class="relative">
+                            <textarea id="nodes-input" class="custom-scrollbar font-mono text-xs w-full h-44 p-3.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-600" placeholder="[&#10;  {&#10;    &quot;type&quot;: &quot;vless&quot;,&#10;    &quot;tag&quot;: &quot;Germany-01&quot;,&#10;    &quot;server&quot;: &quot;de.example.com&quot;,&#10;    &quot;server_port&quot;: 443,&#10;    &quot;uuid&quot;: &quot;...&quot;&#10;  }&#10;]&#10;... or vless:// links (multi-line)"></textarea>
+                        </div>
+
+                        <!-- Import Toolbar (File Upload & Drag Hint) -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
                             <div class="flex items-center gap-2">
-                                <button id="copy-btn" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs md:text-sm py-1.5 px-3.5 rounded-lg font-medium transition-all" data-lang="copyBtn">
-                                    Copy
-                                </button>
-                                <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm py-1.5 px-3.5 rounded-lg font-medium shadow-sm transition-all" data-lang="downloadBtn">
-                                    Download config.json
-                                </button>
+                                <label for="file-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 font-medium hover:bg-indigo-500/20 border border-indigo-500/20 transition-all" data-lang="uploadFile">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <span>Select File</span>
+                                </label>
+                                <span class="text-slate-500" data-lang="dropHint">or drag and drop a config file here</span>
+                                <input type="file" id="file-input" class="hidden" accept=".txt,.json,.conf">
                             </div>
                         </div>
-                        <textarea id="config-output" class="font-mono text-xs md:text-sm w-full h-80 p-4 bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" readonly></textarea>
+
+                        <!-- Subscription Fetch Card -->
+                        <div class="mt-4 pt-4 border-t border-slate-800/80 space-y-2.5">
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="url" id="subscription-url-input" class="flex-1 text-xs p-2.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono placeholder:text-slate-600" placeholder="https://example.com/api/v1/client/subscribe?token=...">
+                                <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg border border-slate-700 transition-all shrink-0" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="use-cors-proxy" class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer">
+                                <label for="use-cors-proxy" class="text-xs text-slate-400 cursor-pointer select-none" data-lang="useCorsProxyLabel">
+                                    Use third-party CORS proxy fallback (if direct connection fails or CORS is blocked)
+                                </label>
+                            </div>
+                            <p class="text-[11px] text-slate-500" data-lang="corsNotice">
+                                Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway.
+                            </p>
+                        </div>
+                    </section>
+
+                    <!-- 2. Interactive Usable Nodes Table -->
+                    <section id="nodes-table-section" class="glass-panel rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl hidden">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-slate-200 text-sm sm:text-base flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                    <span data-lang="usableNodesTitle">Imported Usable Proxy Nodes</span>
+                                </h3>
+                            </div>
+                            <div id="nodes-summary-badge" class="text-xs font-mono bg-slate-900/90 px-3 py-1 rounded-lg text-slate-300 border border-slate-800">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Table Action & Search Toolbar -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+                            <div class="relative flex-1">
+                                <input type="text" id="nodes-search-input" placeholder="Search nodes by name, host, port..." class="w-full text-xs py-2 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
+                                <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </div>
+                            <button id="shuffle-nodes-btn" class="px-3.5 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm" data-lang="shuffleNodesBtn">
+                                🔀 Shuffle Order
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                                    <tr>
+                                        <th id="sort-nodes-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
+                                            <span data-lang="tableHeaderIndex">#</span> <span class="sort-icon text-[10px]">↕</span>
+                                        </th>
+                                        <th id="sort-nodes-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
+                                            <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
+                                        </th>
+                                        <th id="sort-nodes-type" class="p-3 w-24 cursor-pointer hover:text-white transition-colors" title="Sort by Type">
+                                            <span data-lang="tableHeaderType">Type</span> <span class="sort-icon text-[10px]">↕</span>
+                                        </th>
+                                        <th class="p-3 text-center w-16" data-lang="tableHeaderEnabled">Active</th>
+                                        <th id="sort-nodes-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
+                                            <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
+                                        </th>
+                                        <th class="p-3 w-32" data-lang="tableHeaderOutbound">Outbound Tag</th>
+                                        <th class="p-3 text-center w-24" data-lang="tableHeaderActions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nodes-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- Right Sidebar Settings & CTA (4 Cols) -->
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">02</span>
+                            <span data-lang="step2Title">Local Proxy Settings</span>
+                        </h2>
+
+                        <div class="space-y-4 text-xs">
+                            <div>
+                                <label for="listen-address" class="block font-medium text-slate-300 mb-1" data-lang="listenAddressLabel">Listen Address</label>
+                                <input type="text" id="listen-address" value="127.0.0.1" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-[11px] text-slate-500 mt-1" data-lang="listenAddressHelp">Default 127.0.0.1 (Localhost only for security).</p>
+                            </div>
+
+                            <div>
+                                <label for="start-port" class="block font-medium text-slate-300 mb-1" data-lang="startPortLabel">Starting Port Number</label>
+                                <input type="number" id="start-port" value="20808" min="1" max="65535" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-[11px] text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 20808, 20809...</p>
+                            </div>
+
+                            <div>
+                                <label for="custom-filename-input" class="block font-medium text-slate-300 mb-1" data-lang="customFileNameLabel">Output Base Filename</label>
+                                <input type="text" id="custom-filename-input" value="config" placeholder="config" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-[11px] text-slate-500 mt-1" data-lang="customFileNameHelp">Base name for config and runner scripts (Default: config)</p>
+                            </div>
+
+                            <div>
+                                <label class="block font-medium text-slate-300 mb-1" data-lang="protocolModeLabel">Inbound Protocol</label>
+                                <div class="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span data-lang="protocolModeValue">Mixed (SOCKS5 + HTTP)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DNS & Advanced Settings Accordion -->
+                        <div class="pt-4 border-t border-slate-800 space-y-4 text-xs">
+                            <h3 class="font-bold text-slate-300 flex items-center gap-2" data-lang="step3Title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                                <span>DNS & Advanced</span>
+                            </h3>
+
+                            <div>
+                                <label for="bootstrap-dns" class="block font-medium text-slate-300 mb-1" data-lang="bootstrapDnsLabel">Bootstrap DNS (local_dns)</label>
+                                <select id="bootstrap-dns" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
+                                    <option value="8.8.8.8">8.8.8.8 (Google)</option>
+                                    <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
+                                    <option value="local">local (System DNS)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="remote-dns" class="block font-medium text-slate-300 mb-1" data-lang="remoteDnsLabel">Remote Proxy DNS (per-node)</label>
+                                <select id="remote-dns" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="1.1.1.1">1.1.1.1 (Cloudflare)</option>
+                                    <option value="8.8.8.8">8.8.8.8 (Google)</option>
+                                    <option value="9.9.9.9">9.9.9.9 (Quad9)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="dns-strategy" class="block font-medium text-slate-300 mb-1" data-lang="dnsStrategyLabel">DNS Strategy</label>
+                                <select id="dns-strategy" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="prefer_ipv4">prefer_ipv4 (Default / Recommended)</option>
+                                    <option value="prefer_ipv6">prefer_ipv6</option>
+                                    <option value="ipv4_only">ipv4_only</option>
+                                    <option value="ipv6_only">ipv6_only</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="log-level" class="block font-medium text-slate-300 mb-1" data-lang="logLevelLabel">Log Level</label>
+                                <select id="log-level" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="warn">warn (Default)</option>
+                                    <option value="info">info</option>
+                                    <option value="error">error</option>
+                                    <option value="debug">debug</option>
+                                    <option value="trace">trace</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Big Generate Button -->
+                        <div class="pt-2">
+                            <button id="generate-btn" class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2" disabled data-lang="generateBtn">
+                                <span>Please import proxy nodes first</span>
+                            </button>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+
+            <!-- Output & Verification Section (Displays when config is generated) -->
+            <div id="output-section" class="hidden space-y-6 pt-2">
+                
+                <!-- Validation Results Card -->
+                <div id="validation-card" class="p-4 rounded-xl text-xs sm:text-sm font-medium border glass-panel">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Route Mapping & Isolation Summary -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-white text-sm sm:text-base flex items-center gap-2" data-lang="outputSummaryTitle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            <span>Route Isolation & Port Mapping Summary</span>
+                        </h3>
+                        <button id="validate-btn" class="text-xs px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg border border-indigo-500/20 font-medium transition-colors" data-lang="validateBtn">
+                            Validate Structure
+                        </button>
+                    </div>
+                    <div id="summary-mapping-list" class="space-y-2 text-xs font-mono custom-scrollbar max-h-60 overflow-y-auto">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Visual Traffic Flow Diagram Card -->
+                <div id="visual-diagram-card" class="glass-panel p-5 sm:p-6 rounded-2xl space-y-4 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <h3 class="font-bold text-white text-sm sm:text-base flex items-center gap-2" data-lang="visualDiagramTitle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            <span>Visual Traffic Flow Diagram</span>
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <label for="diagram-node-select" class="text-xs text-slate-400" data-lang="selectNodeLabel">Highlight Node:</label>
+                            <select id="diagram-node-select" class="p-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Diagram Interactive Pipeline -->
+                    <div dir="ltr" class="bg-slate-950/60 p-4 sm:p-6 rounded-xl border border-slate-800/80">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center text-center">
+                            
+                            <!-- Step 1: Local Inbound -->
+                            <div class="p-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 space-y-1 shadow-sm">
+                                <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">1. Local Inbound</span>
+                                <div id="diagram-inbound-port" class="font-mono font-bold text-xs text-white">127.0.0.1:20808</div>
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/10 text-indigo-300">Mixed (SOCKS5+HTTP)</span>
+                            </div>
+
+                            <!-- Arrow 1 -->
+                            <div class="hidden md:flex justify-center text-indigo-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-pulse"><polyline points="9 18 15 12 9 6"/></svg>
+                            </div>
+
+                            <!-- Step 2: Strict Isolation Route -->
+                            <div class="p-3 rounded-xl bg-slate-900/90 border border-purple-500/40 space-y-1 shadow-sm">
+                                <span class="text-[10px] uppercase font-bold text-purple-400 tracking-wider">2. Router Engine</span>
+                                <div id="diagram-route-tag" class="font-mono font-bold text-xs text-white">proxy-in-01 &rarr; proxy-out-01</div>
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] font-mono rounded bg-purple-500/10 text-purple-300">Final Policy: block</span>
+                            </div>
+
+                            <!-- Arrow 2 -->
+                            <div class="hidden md:flex justify-center text-purple-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-pulse"><polyline points="9 18 15 12 9 6"/></svg>
+                            </div>
+
+                            <!-- Step 3: Outbound & Dedicated DNS -->
+                            <div class="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 space-y-1 shadow-sm">
+                                <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">3. Remote Proxy & DNS</span>
+                                <div id="diagram-outbound-tag" class="font-mono font-bold text-xs text-white truncate">Node Name</div>
+                                <div id="diagram-dns-tag" class="text-[10px] font-mono text-emerald-400 truncate">DNS: dns-proxy-01 (1.1.1.1)</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config Output Preview -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4 shadow-xl">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <h3 class="font-bold text-white text-sm sm:text-base" data-lang="outputPreview">Configuration Preview</h3>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1.5 px-3.5 rounded-lg font-medium border border-slate-700 transition-all" data-lang="copyBtn">
+                                Copy Config
+                            </button>
+                            <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-1.5 px-3.5 rounded-lg font-medium shadow-md shadow-emerald-600/25 transition-all" data-lang="downloadBtn">
+                                Download config.json
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="config-output" class="custom-scrollbar font-mono text-xs w-full h-80 p-4 bg-slate-950 text-emerald-400 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly></textarea>
+                    
+                    <!-- Run Command Helper Card -->
+                    <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2" data-lang="runCommandTitle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-400"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                                <span>Run Sing-Box Command</span>
+                            </h4>
+                            <button id="copy-run-cmd-btn" class="text-xs px-3 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5" data-lang="copyCommandBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <span>Copy Command</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-400" data-lang="runCommandDesc">Run sing-box locally with your generated config:</p>
+                        <div class="font-mono text-xs text-emerald-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto border border-slate-800/80">
+                            <code id="run-command-preview">.\sing-box.exe run -c config.json</code>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: CONNECTION & IP TEST                                    -->
+        <!-- ============================================================== -->
+        <div id="tab-testing" class="tab-pane hidden space-y-6">
+            <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="testTabTitle">
+                            Proxy Node Health & IP Inspector
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1" data-lang="testTabDesc">
+                            Test individual or all local endpoints when sing-box is running locally on this machine.
+                        </p>
+                    </div>
+                    <button id="test-all-btn" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition-all whitespace-nowrap flex items-center gap-2" data-lang="testAllBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span>⚡ Test All Nodes</span>
+                    </button>
+                </div>
+
+                <!-- Real-Delay Testing Info & Action Bar -->
+                <div class="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
+                    <div class="flex items-start gap-2.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <p class="text-slate-300 leading-relaxed" data-lang="realDelayNotice">
+                            Real-delay testing measures true round-trip time through each node via sing-box local mixed proxy ports. Download the script below to test all active ports using curl.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button id="download-real-delay-bat-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayBatBtn">
+                            📥 Download Real-Delay (.bat)
+                        </button>
+                        <button id="download-real-delay-sh-btn" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayShBtn">
+                            📥 Download (.sh)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manual Single Port Probe Card -->
+                <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-md">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h3 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2" data-lang="manualTestTitle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                <span>Manual Single Port Real-Delay Probe</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 mt-0.5" data-lang="manualTestDesc">
+                                Test real proxy latency on a specific local port after starting sing-box, with one-click cURL generator.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <label for="manual-probe-port" class="block font-medium text-slate-400 mb-1" data-lang="manualPortLabel">Target Port</label>
+                            <input type="number" id="manual-probe-port" value="20808" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label for="manual-probe-ip" class="block font-medium text-slate-400 mb-1" data-lang="manualIpLabel">Local IP</label>
+                            <input type="text" id="manual-probe-ip" value="127.0.0.1" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="manual-probe-target" class="block font-medium text-slate-400 mb-1">Target Endpoint</label>
+                            <input type="url" id="manual-probe-target" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div class="flex items-center gap-2">
+                            <button id="manual-probe-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5" data-lang="manualTestBtn">
+                                ⚡ Probe Port
+                            </button>
+                            <button id="manual-copy-curl-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5" data-lang="copyCurlCmdBtn">
+                                📋 Copy cURL Command
+                            </button>
+                        </div>
+                        <div id="manual-probe-result" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+                            Ready to probe port
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Endpoint Settings Box -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2" data-lang="testSettingsTitle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            <span>Endpoint Settings</span>
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <button id="save-endpoints-btn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors" data-lang="saveEndpointsBtn">Save Endpoints</button>
+                            <button id="reset-endpoints-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 transition-colors" data-lang="resetEndpointsBtn">Reset to Defaults</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label for="ping-test-url" class="block font-medium text-slate-400 mb-1" data-lang="pingUrlLabel">Ping Latency Test URL</label>
+                            <input type="url" id="ping-test-url" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label for="ip-lookup-url" class="block font-medium text-slate-400 mb-1" data-lang="ipUrlLabel">IP Lookup Service URL</label>
+                            <input type="url" id="ip-lookup-url" value="https://api.ipify.org?format=json" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Search Bar -->
+                <div class="relative">
+                    <input type="text" id="test-search-input" placeholder="Search test nodes by name, port, IP..." class="w-full text-xs py-2 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
+                    <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+
+                <!-- Test Results Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                            <tr>
+                                <th id="sort-test-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
+                                    <span>#</span> <span class="sort-icon text-[10px]">↕</span>
+                                </th>
+                                <th id="sort-test-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
+                                    <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
+                                </th>
+                                <th id="sort-test-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
+                                    <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
+                                </th>
+                                <th class="p-3 w-36" data-lang="colStatus">Status</th>
+                                <th id="sort-test-ping" class="p-3 w-32 cursor-pointer hover:text-white transition-colors" title="Sort by Latency">
+                                    <span data-lang="colPing">Latency (Ping)</span> <span class="sort-icon text-[10px]">↕</span>
+                                </th>
+                                <th id="sort-test-ip" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by IP">
+                                    <span data-lang="colIp">Detected Egress IP</span> <span class="sort-icon text-[10px]">↕</span>
+                                </th>
+                                <th class="p-3 text-center w-24" data-lang="tableHeaderActions">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="test-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40 font-mono text-xs">
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: RUNNER & CONSOLE                                        -->
+        <!-- ============================================================== -->
+        <div id="tab-runner" class="tab-pane hidden space-y-6">
+            <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="runnerTabTitle">
+                        Local Binary Runner & Quick Scripts
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1" data-lang="runnerTabDesc">
+                        Configure your sing-box binary path, generate one-click execution scripts, and view live instructions.
+                    </p>
+                </div>
+
+                <!-- Binary & Config Paths -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                    <div>
+                        <label for="runner-binary-path" class="block font-medium text-slate-300 mb-1.5" data-lang="binaryPathLabel">sing-box Binary Path / Command</label>
+                        <input type="text" id="runner-binary-path" value=".\sing-box.exe" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path=".\sing-box.exe">Windows (.\sing-box.exe)</button>
+                            <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path="sing-box">Linux/macOS (sing-box)</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="runner-config-path" class="block font-medium text-slate-300 mb-1.5" data-lang="configPathLabel">Config File Path</label>
+                        <input type="text" id="runner-config-path" value="config.json" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Command & Script Downloads -->
+                <div class="p-5 bg-slate-900/90 rounded-xl border border-slate-800 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider" data-lang="consoleTitle">Interactive Command & Runner Console</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button id="runner-copy-cmd-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs rounded-lg border border-slate-700 transition-colors" data-lang="copyCommandBtn">Copy Command</button>
+                            <button id="download-bat-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow transition-colors" data-lang="downloadBatBtn">📥 Download run.bat (Windows)</button>
+                            <button id="download-sh-btn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow transition-colors" data-lang="downloadShBtn">📥 Download run.sh (Linux/macOS)</button>
+                        </div>
+                    </div>
+
+                    <div class="font-mono text-xs text-emerald-400 bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto shadow-inner">
+                        <code id="full-runner-cmd">.\sing-box.exe run -c config.json</code>
+                    </div>
+
+                    <!-- Step-by-Step Instructions -->
+                    <div class="border-t border-slate-800 pt-4 space-y-2 text-xs text-slate-400">
+                        <p data-lang="runnerStep1">1. Download your generated config.json and place it in the same folder as sing-box binary.</p>
+                        <p data-lang="runnerStep2">2. Open Terminal / PowerShell in that directory and run the command above, or run the downloaded runner script.</p>
+                        <p data-lang="runnerStep3">3. All mixed ports (10808, 10809...) will start listening and routing traffic to their respective proxies.</p>
                     </div>
                 </div>
             </section>
+        </div>
 
-        </main>
+    </main>
 
-        <!-- Footer -->
-        <footer class="text-center mt-12 text-xs text-slate-400 dark:text-slate-500 space-y-2">
-            <p>General Proxy Manager &bull; Target: sing-box 1.13.18 &bull; Client-side &amp; Privacy-First</p>
-            <p>
-                <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" class="text-blue-500 hover:underline">GitHub Repository</a>
-            </p>
-        </footer>
+    <!-- ============================================================== -->
+    <!-- EDIT NODE MODAL                                                -->
+    <!-- ============================================================== -->
+    <div id="edit-node-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/80 w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-base text-white flex items-center gap-2" data-lang="editNodeTitle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Edit Proxy Node</span>
+                </h3>
+                <button id="close-edit-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+                <!-- Modal Tabs: Form vs JSON -->
+                <div class="flex gap-2 border-b border-slate-800 pb-3">
+                    <button id="modal-tab-form" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white" data-lang="formFieldsTab">Form Editor</button>
+                    <button id="modal-tab-json" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800" data-lang="rawJsonTab">Raw JSON Outbound</button>
+                </div>
+
+                <!-- Form Mode -->
+                <div id="modal-form-mode" class="space-y-3.5 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldNodeTag">Node Name (Tag)</label>
+                            <input type="text" id="edit-node-tag" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldServer">Server Host / IP</label>
+                            <input type="text" id="edit-node-server" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldServerPort">Server Port</label>
+                            <input type="number" id="edit-node-port" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldUuid">UUID / Password</label>
+                            <input type="text" id="edit-node-uuid" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldFlow">Flow (e.g. xtls-rprx-vision)</label>
+                            <input type="text" id="edit-node-flow" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldSni">TLS / Reality SNI</label>
+                            <input type="text" id="edit-node-sni" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldPublicKey">Reality Public Key (pbk)</label>
+                            <input type="text" id="edit-node-pbk" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldShortId">Reality Short ID (sid)</label>
+                            <input type="text" id="edit-node-sid" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldFingerprint">uTLS Fingerprint</label>
+                            <input type="text" id="edit-node-fp" value="chrome" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-300 mb-1" data-lang="fieldTransportType">Transport Type</label>
+                            <input type="text" id="edit-node-transport-type" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200" placeholder="ws / http / grpc / tcp">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JSON Mode -->
+                <div id="modal-json-mode" class="hidden space-y-2">
+                    <textarea id="edit-node-raw-json" class="custom-scrollbar font-mono text-xs w-full h-64 p-3 bg-slate-950 text-emerald-400 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 flex justify-end gap-2.5 bg-slate-950/40 rounded-b-2xl">
+                <button id="cancel-edit-node-btn" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-lg transition-colors" data-lang="closeModalBtn">Close</button>
+                <button id="save-edit-node-btn" class="px-5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-md transition-colors" data-lang="saveNodeBtn">Save Changes</button>
+            </div>
+        </div>
     </div>
+
+    <!-- ============================================================== -->
+    <!-- CONFIRMATION MODAL                                             -->
+    <!-- ============================================================== -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/80 w-full max-w-md p-6 space-y-4">
+            <h3 class="font-bold text-base text-white flex items-center gap-2" data-lang="confirmChangeTitle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-400"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Confirm Endpoint Change</span>
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed" data-lang="confirmChangeMsg">
+                Are you sure you want to change the testing endpoints? Custom endpoints must support CORS or be accessible from your browser.
+            </p>
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button id="confirm-cancel-btn" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-lg transition-colors" data-lang="confirmCancel">Cancel</button>
+                <button id="confirm-yes-btn" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow transition-colors" data-lang="confirmYes">Yes, Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-12 text-xs text-slate-500 space-y-1.5">
+        <p>General Proxy Manager &bull; sing-box 1.13.18 Multi-port Gateway &bull; 100% Client-Side</p>
+        <p>
+            <a href="https://github.com/MahDN/SingMP-Gen" target="_blank" rel="noopener" class="text-indigo-400 hover:underline">GitHub Repository</a>
+        </p>
+    </footer>
 
     <!-- Load main script as an ES module -->
     <script src="main.js" type="module"></script>
