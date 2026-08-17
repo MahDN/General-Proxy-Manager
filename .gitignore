@@ -8,3 +8,8 @@ runtime-test-config.json
 .agents/
 subscription.txt
 links.txt
+target/
+src-tauri/target/
+src-tauri/binaries/
+dist/
+runtime-singbox-config.json
