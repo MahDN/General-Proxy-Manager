@@ -1,6 +1,6 @@
 # مدیریت پروکسی چند پورتی (General Proxy Manager)
 
-[English](/README-EN.md) | [简体中文](/README.md) | فارسی
+[English](/README.md) | [简体中文](/README-ZH.md) | فارسی
 
 یک درگاه و مولد پیکربندی چند پورتی و تفکیک‌شده محلی بر پایه هسته **sing-box 1.13.18**.
 
