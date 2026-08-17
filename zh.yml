@@ -7,9 +7,9 @@ step1Desc: "粘贴 outbounds 数组、完整 sing-box JSON 配置，或上传配
 inputPlaceholder: "[\n  {\n    \"type\": \"vless\",\n    \"tag\": \"德国-01\",\n    \"server\": \"de.example.com\",\n    \"server_port\": 443,\n    \"uuid\": \"...\"\n  }\n]\n... 或完整的 sing-box JSON 配置"
 uploadFile: "选择文件"
 dropHint: "或拖拽文件到文本框"
-subscriptionPlaceholder: "输入订阅链接（直接获取，隐私安全）"
 fetchSubscriptionBtn: "获取订阅"
-corsNotice: "隐私安全提示：订阅由浏览器直接发起请求，绝不经过第三方代理服务器。需订阅服务器支持 CORS 跨域请求。"
+useCorsProxyLabel: "使用第三方 CORS 代理服务（如果目标服务器阻止直接浏览器请求）"
+corsNotice: "隐私提示：默认情况下，订阅直接由浏览器获取。启用此选项将通过公共 CORS 代理服务器中转请求。"
 
 step2Title: "2. 本地代理配置"
 listenAddressLabel: "监听地址"

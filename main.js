@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const clearInputBtn = document.getElementById('clear-input-btn');
   const subscriptionUrlInput = document.getElementById('subscription-url-input');
   const fetchSubBtn = document.getElementById('fetch-sub-btn');
+  const useCorsProxyCheckbox = document.getElementById('use-cors-proxy');
 
   const nodesTableSection = document.getElementById('nodes-table-section');
   const nodesTableBody = document.getElementById('nodes-table-body');
@@ -239,16 +240,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     generateBtn.textContent = langData.generateBtnDisabled || 'Please import proxy nodes first';
   };
 
-  // --- Subscription Direct Fetch (Privacy-First) ---
+  // --- Subscription Fetch (Direct by default, with optional CORS proxy fallback) ---
   const fetchSubscription = async (url) => {
     if (!url || !url.startsWith('http')) {
       alert('Please enter a valid HTTP/HTTPS subscription URL.');
       return;
     }
 
-    setLoading(true, langData.loadingSubscription || 'Fetching subscription directly...');
+    const useProxy = useCorsProxyCheckbox && useCorsProxyCheckbox.checked;
+    const fetchUrl = useProxy
+      ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      : url;
+
+    setLoading(true, langData.loadingSubscription || 'Fetching subscription...');
     try {
-      const response = await fetch(url, {
+      const response = await fetch(fetchUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json, text/plain, */*'
@@ -259,8 +265,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       nodesInput.value = text;
       handleRawText(text);
     } catch (error) {
-      console.error('Direct subscription fetch error:', error);
-      alert(langData.errorSubscriptionFetch || 'Error: Direct subscription fetch failed. The remote server may block CORS or the URL is invalid.');
+      console.error('Subscription fetch error:', error);
+      if (!useProxy) {
+        alert((langData.errorSubscriptionFetch || 'Error: Direct subscription fetch failed. The remote server may block CORS.') + '\n\n' + (langData.useCorsProxyLabel || 'You can enable "Use third-party CORS proxy fallback" checkbox to bypass CORS restrictions.'));
+      } else {
+        alert(langData.errorSubscriptionFetch || 'Error: Failed to fetch subscription via CORS proxy. Please check the URL.');
+      }
     } finally {
       setLoading(false);
     }

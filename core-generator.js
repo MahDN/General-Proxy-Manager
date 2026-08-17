@@ -68,13 +68,130 @@ export function cleanJsonString(text) {
   return cleaned.trim();
 }
 
+export function parseVlessLink(link) {
+  try {
+    const trimmed = link.trim();
+    if (!trimmed.startsWith('vless://')) return null;
+    const url = new URL(trimmed);
+    const uuid = url.username;
+    const server = url.hostname;
+    const server_port = parseInt(url.port || '443', 10);
+    const tag = url.hash ? decodeURIComponent(url.hash.slice(1)) : `${server}:${server_port}`;
+    const params = url.searchParams;
+
+    const security = (params.get('security') || '').toLowerCase();
+    const type = (params.get('type') || params.get('headerType') || 'tcp').toLowerCase();
+    const flow = params.get('flow');
+    const sni = params.get('sni') || params.get('host');
+    const pbk = params.get('pbk');
+    const sid = params.get('sid');
+    const fp = params.get('fp') || 'chrome';
+    const path = params.get('path') || '/';
+    const host = params.get('host');
+    const packetEncoding = params.get('packetEncoding') || params.get('packet_encoding');
+
+    const outbound = {
+      type: 'vless',
+      tag: tag,
+      server: server,
+      server_port: server_port,
+      uuid: uuid
+    };
+
+    if (flow) outbound.flow = flow;
+    if (packetEncoding) outbound.packet_encoding = packetEncoding;
+
+    if (security === 'reality') {
+      outbound.tls = {
+        enabled: true,
+        server_name: sni || server,
+        utls: { enabled: true, fingerprint: fp },
+        reality: {
+          enabled: true,
+          public_key: pbk || '',
+          short_id: sid || ''
+        }
+      };
+    } else if (security === 'tls') {
+      outbound.tls = {
+        enabled: true,
+        server_name: sni || server,
+        utls: { enabled: true, fingerprint: fp }
+      };
+    }
+
+    if (type === 'ws') {
+      outbound.transport = {
+        type: 'ws',
+        path: path,
+        headers: host ? { Host: host } : undefined
+      };
+    } else if (type === 'grpc') {
+      outbound.transport = {
+        type: 'grpc',
+        service_name: params.get('serviceName') || path
+      };
+    } else if (type === 'http' || params.get('headerType') === 'http' || type === 'xhttp' || type === 'splithttp') {
+      outbound.transport = {
+        type: 'http',
+        path: path,
+        host: host ? [host] : undefined
+      };
+    }
+
+    return outbound;
+  } catch (err) {
+    return null;
+  }
+}
+
+export function tryParseShareLinksOrBase64(text) {
+  if (typeof text !== 'string') return null;
+  const trimmed = text.trim();
+
+  // Try direct lines with vless://
+  const lines = trimmed.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const directVless = lines.filter(l => l.startsWith('vless://'));
+  if (directVless.length > 0) {
+    const outbounds = directVless.map(parseVlessLink).filter(Boolean);
+    if (outbounds.length > 0) return outbounds;
+  }
+
+  // Try Base64 decoding
+  try {
+    const cleanB64 = trimmed.replace(/\s/g, '');
+    let decoded = '';
+    if (typeof atob === 'function') {
+      decoded = atob(cleanB64);
+    } else if (typeof Buffer !== 'undefined') {
+      decoded = Buffer.from(cleanB64, 'base64').toString('utf8');
+    }
+    if (decoded && (decoded.includes('vless://') || decoded.includes('vmess://') || decoded.includes('trojan://') || decoded.includes('ss://'))) {
+      const decodedLines = decoded.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const b64Vless = decodedLines.filter(l => l.startsWith('vless://'));
+      if (b64Vless.length > 0) {
+        const outbounds = b64Vless.map(parseVlessLink).filter(Boolean);
+        if (outbounds.length > 0) return outbounds;
+      }
+    }
+  } catch (_) {}
+
+  return null;
+}
+
 /**
- * Parses raw JSON / outbounds array / full sing-box configuration.
+ * Parses raw JSON / outbounds array / full sing-box configuration / VLESS share links / Base64 subscription.
  * Returns an array of raw usable proxy outbound objects.
  */
 export function parseInput(text) {
   if (!text || typeof text !== 'string' || !text.trim()) {
     throw new Error('Empty input provided.');
+  }
+
+  // Check for share links or Base64 subscription first
+  const shareOutbounds = tryParseShareLinksOrBase64(text);
+  if (shareOutbounds && shareOutbounds.length > 0) {
+    return deepClone(shareOutbounds);
   }
 
   const cleaned = cleanJsonString(text);
@@ -95,7 +212,7 @@ export function parseInput(text) {
   } else if (typeof parsed === 'object' && parsed !== null && Array.isArray(parsed.outbounds)) {
     candidateOutbounds = parsed.outbounds;
   } else {
-    throw new Error("Input must be a JSON array of outbounds or a complete sing-box configuration object with an 'outbounds' array.");
+    throw new Error("Input must be a JSON array of outbounds, a complete sing-box configuration object with an 'outbounds' array, or VLESS share links.");
   }
 
   const usable = candidateOutbounds.filter(isUsableProxyOutbound);

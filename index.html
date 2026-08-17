@@ -130,13 +130,19 @@
                     </div>
 
                     <!-- Subscription Fetch Option -->
-                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
                         <div class="flex flex-col sm:flex-row gap-2">
                             <input type="url" id="subscription-url-input" class="flex-1 text-sm p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/api/v1/client/subscribe?token=...">
                             <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
                         </div>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5" data-lang="corsNotice">
-                            Privacy Notice: Subscriptions are fetched directly in your browser without third-party proxy servers. The subscription provider must permit CORS requests.
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="use-cors-proxy" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="use-cors-proxy" class="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none" data-lang="useCorsProxyLabel">
+                                Use third-party CORS proxy fallback (if direct connection fails or CORS is blocked)
+                            </label>
+                        </div>
+                        <p class="text-xs text-slate-400 dark:text-slate-500" data-lang="corsNotice">
+                            Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway.
                         </p>
                     </div>
                 </div>

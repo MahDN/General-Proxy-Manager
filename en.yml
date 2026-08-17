@@ -7,9 +7,9 @@ step1Desc: "Paste your outbounds array, full sing-box JSON configuration, or upl
 inputPlaceholder: "[\n  {\n    \"type\": \"vless\",\n    \"tag\": \"Germany-01\",\n    \"server\": \"de.example.com\",\n    \"server_port\": 443,\n    \"uuid\": \"...\"\n  }\n]\n... or complete sing-box JSON config"
 uploadFile: "Select File"
 dropHint: "or drag and drop a config file here"
-subscriptionPlaceholder: "Enter subscription URL (direct fetch, privacy-first)"
 fetchSubscriptionBtn: "Fetch Subscription"
-corsNotice: "Privacy Notice: Subscriptions are fetched directly in your browser without third-party proxy servers. The subscription provider must permit CORS requests."
+useCorsProxyLabel: "Use third-party CORS proxy fallback (if direct request fails or remote server blocks CORS)"
+corsNotice: "Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway."
 
 step2Title: "2. Local Proxy Settings"
 listenAddressLabel: "Listen Address"

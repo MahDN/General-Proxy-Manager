@@ -18,7 +18,9 @@ import {
   isUsableProxyOutbound
 } from '../core-generator.js';
 
-const SINGBOX_BIN = path.join(os.tmpdir(), 'sing-box-1.13.18', 'sing-box-1.13.18-windows-amd64', 'sing-box.exe');
+const LOCAL_BIN = path.join(process.cwd(), 'sing-box.exe');
+const TEMP_BIN = path.join(os.tmpdir(), 'sing-box-1.13.18', 'sing-box-1.13.18-windows-amd64', 'sing-box.exe');
+const SINGBOX_BIN = fs.existsSync(LOCAL_BIN) ? LOCAL_BIN : TEMP_BIN;
 const HAS_SINGBOX_BIN = fs.existsSync(SINGBOX_BIN);
 
 function runSingBoxCheck(configObj) {
@@ -468,6 +470,43 @@ test('TEST 24: Generated mixed inbound is valid for sing-box 1.13.18', () => {
   assert.equal(inbound.type, 'mixed');
   assert.equal(inbound.listen, '127.0.0.1');
   assert.equal(inbound.listen_port, 10808);
+
+  const check = runSingBoxCheck(config);
+  assert.equal(check.success, true, check.error);
+});
+
+test('TEST 25: Parse real vless:// links from links.txt (17 nodes) and validate with sing-box check', () => {
+  const linksContent = fs.readFileSync(path.join(process.cwd(), 'links.txt'), 'utf8');
+  const parsed = parseInput(linksContent);
+  assert.equal(parsed.length, 17);
+
+  const normalized = normalizeNodes(parsed, 10808);
+  assert.equal(normalized.length, 17);
+
+  const config = generateConfig({ normalizedNodes: normalized });
+  const validation = validateGeneratedConfig(config, normalized);
+  assert.equal(validation.valid, true, `Validation failed: ${validation.errors.join(', ')}`);
+
+  assert.equal(config.inbounds.length, 17);
+  assert.equal(config.outbounds.length, 19); // 17 proxy outbounds + direct + block
+  assert.equal(config.route.rules.length, 17);
+  assert.equal(config.dns.servers.length, 18); // 17 dns servers + local_dns
+
+  const check = runSingBoxCheck(config);
+  assert.equal(check.success, true, check.error);
+});
+
+test('TEST 26: Parse Base64 subscription string containing vless:// links', () => {
+  const rawLinks = fs.readFileSync(path.join(process.cwd(), 'links.txt'), 'utf8');
+  const base64Content = Buffer.from(rawLinks, 'utf8').toString('base64');
+
+  const parsed = parseInput(base64Content);
+  assert.equal(parsed.length, 17);
+
+  const normalized = normalizeNodes(parsed, 10808);
+  const config = generateConfig({ normalizedNodes: normalized });
+  const validation = validateGeneratedConfig(config, normalized);
+  assert.equal(validation.valid, true);
 
   const check = runSingBoxCheck(config);
   assert.equal(check.success, true, check.error);
