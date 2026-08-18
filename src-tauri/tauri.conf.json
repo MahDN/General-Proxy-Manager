@@ -4,7 +4,8 @@
   "version": "2.0.0",
   "identifier": "com.mahdn.general-proxy-manager",
   "build": {
-    "beforeBuildCommand": "node -e \"const fs=require('fs'); fs.mkdirSync('dist', {recursive: true}); ['index.html','main.js','core-generator.js','locales.js','sing-box-template.json.tpl','favicon.ico','en.yml','fa.yml','zh.yml'].forEach(f => fs.existsSync(f) && fs.copyFileSync(f, 'dist/' + f)); if(fs.existsSync('img')) fs.cpSync('img', 'dist/img', {recursive: true});\"",
+    "beforeDevCommand": "node build-dist.js",
+    "beforeBuildCommand": "node build-dist.js",
     "frontendDist": "../dist"
   },
   "app": {
