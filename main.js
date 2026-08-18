@@ -990,6 +990,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (outputSection && !outputSection.classList.contains('hidden')) {
         handleGenerate();
+      }
+    });
+  }
+
   if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', closeEditModal);
   if (cancelEditNodeBtn) cancelEditNodeBtn.addEventListener('click', closeEditModal);
 
@@ -1687,47 +1691,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  runnerCopyCmdBtn.addEventListener('click', () => {
-    copyTextToClipboard(fullRunnerCmd?.textContent || '', runnerCopyCmdBtn);
-  });
+  if (runnerCopyCmdBtn) {
+    runnerCopyCmdBtn.addEventListener('click', () => {
+      copyTextToClipboard(fullRunnerCmd?.textContent || '', runnerCopyCmdBtn);
+    });
+  }
 
   // --- Fixed & Bulletproof run-proxy.bat Generator ---
-  downloadBatBtn.addEventListener('click', () => {
-    const bin = (runnerBinaryPathInput && runnerBinaryPathInput.value.trim()) || '.\\sing-box.exe';
-    const cfg = getConfigFilename();
-    const baseName = getBaseFilename();
-    const firstPort = parseInt(startPortInput?.value, 10) || 20808;
+  if (downloadBatBtn) {
+    downloadBatBtn.addEventListener('click', () => {
+      const bin = (runnerBinaryPathInput && runnerBinaryPathInput.value.trim()) || '.\\sing-box.exe';
+      const cfg = getConfigFilename();
+      const baseName = getBaseFilename();
+      const firstPort = getStartingPort();
 
-    const batContent = `@echo off\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\ntitle Sing-Box General Proxy Manager Runner (${baseName})\r\necho ====================================================\r\necho  Sing-Box Multi-Port Local Gateway Runner\r\necho ====================================================\r\necho [INFO] Working Directory: %cd%\r\necho.\r\n\r\necho [1/3] Checking sing-box executable...\r\nif not exist "${bin}" (\r\n  echo [ERROR] Cannot find sing-box executable at: ${bin}\r\n  echo Please make sure "${bin}" is placed in this directory (%cd%).\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\n\r\necho [2/3] Checking config file: ${cfg}...\r\nif not exist "${cfg}" (\r\n  echo [ERROR] Cannot find configuration file at: ${cfg}\r\n  echo Please make sure you downloaded "${cfg}" and placed it in this directory (%cd%).\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\n\r\necho [3/3] Checking starting port ${firstPort}...\r\nnetstat -ano | findstr ":${firstPort}" | findstr /i "LISTENING" >nul 2>&1\r\nif %errorlevel% equ 0 (\r\n  echo [WARNING] Port ${firstPort} is currently OCCUPIED by another program (e.g. v2rayN/Xray)!\r\n  echo If sing-box fails with 'bind: Only one usage of each socket address':\r\n  echo   - Close conflicting background proxy apps, OR\r\n  echo   - Change Starting Port in General Proxy Manager and re-generate.\r\n  echo.\r\n)\r\n\r\necho ----------------------------------------------------\r\necho Launching sing-box: "${bin}" run -c "${cfg}"\r\necho ----------------------------------------------------\r\n"${bin}" run -c "${cfg}"\r\n\r\necho.\r\necho ====================================================\r\necho  Sing-Box process has stopped.\r\necho ====================================================\r\npause\r\n`;
+      const batContent = `@echo off\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\ntitle Sing-Box General Proxy Manager Runner (${baseName})\r\necho ====================================================\r\necho  Sing-Box Multi-Port Local Gateway Runner\r\necho ====================================================\r\necho [INFO] Working Directory: %cd%\r\necho.\r\n\r\necho [1/3] Checking sing-box executable...\r\nif not exist "${bin}" (\r\n  echo [ERROR] Cannot find sing-box executable at: ${bin}\r\n  echo Please make sure "${bin}" is placed in this directory (%cd%).\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\n\r\necho [2/3] Checking config file: ${cfg}...\r\nif not exist "${cfg}" (\r\n  echo [ERROR] Cannot find configuration file at: ${cfg}\r\n  echo Please make sure you downloaded "${cfg}" and placed it in this directory (%cd%).\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\n\r\necho [3/3] Checking starting port ${firstPort}...\r\nnetstat -ano | findstr ":${firstPort}" | findstr /i "LISTENING" >nul 2>&1\r\nif %errorlevel% equ 0 (\r\n  echo [WARNING] Port ${firstPort} is currently OCCUPIED by another program (e.g. v2rayN/Xray)!\r\n  echo If sing-box fails with 'bind: Only one usage of each socket address':\r\n  echo   - Close conflicting background proxy apps, OR\r\n  echo   - Change Starting Port in General Proxy Manager and re-generate.\r\n  echo.\r\n)\r\n\r\necho ----------------------------------------------------\r\necho Launching sing-box: "${bin}" run -c "${cfg}"\r\necho ----------------------------------------------------\r\n"${bin}" run -c "${cfg}"\r\n\r\necho.\r\necho ====================================================\r\necho  Sing-Box process has stopped.\r\necho ====================================================\r\npause\r\n`;
 
-    const blob = new Blob([batContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `run-${baseName}.bat`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
+      const blob = new Blob([batContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `run-${baseName}.bat`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
 
-  downloadShBtn.addEventListener('click', () => {
-    const bin = (runnerBinaryPathInput && runnerBinaryPathInput.value.trim()) || 'sing-box';
-    const cfg = getConfigFilename();
-    const baseName = getBaseFilename();
+  if (downloadShBtn) {
+    downloadShBtn.addEventListener('click', () => {
+      const bin = (runnerBinaryPathInput && runnerBinaryPathInput.value.trim()) || 'sing-box';
+      const cfg = getConfigFilename();
+      const baseName = getBaseFilename();
 
-    const shContent = `#!/bin/bash\ncd "$(dirname "$0")"\necho "===================================================="\necho " Sing-Box Multi-Port Local Gateway Runner (${baseName})"\necho "===================================================="\nif ! command -v "${bin}" &> /dev/null && [ ! -f "${bin}" ]; then\n  echo "[ERROR] Cannot find sing-box executable at: ${bin}"\n  echo "Please make sure sing-box binary exists and is executable."\n  exit 1\nfi\nif [ ! -f "${cfg}" ]; then\n  echo "[ERROR] Cannot find configuration file at: ${cfg}"\n  exit 1\nfi\necho "Starting sing-box with ${cfg}..."\n${bin} run -c "${cfg}"\n`;
+      const shContent = `#!/bin/bash\ncd "$(dirname "$0")"\necho "===================================================="\necho " Sing-Box Multi-Port Local Gateway Runner (${baseName})"\necho "===================================================="\nif ! command -v "${bin}" &> /dev/null && [ ! -f "${bin}" ]; then\n  echo "[ERROR] Cannot find sing-box executable at: ${bin}"\n  echo "Please make sure sing-box binary exists and is executable."\n  exit 1\nfi\nif [ ! -f "${cfg}" ]; then\n  echo "[ERROR] Cannot find configuration file at: ${cfg}"\n  exit 1\nfi\necho "Starting sing-box with ${cfg}..."\n${bin} run -c "${cfg}"\n`;
 
-    const blob = new Blob([shContent], { type: 'application/x-sh' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `run-${baseName}.sh`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
+      const blob = new Blob([shContent], { type: 'application/x-sh' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `run-${baseName}.sh`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
 
   // --- Node Table Row Action Delegation (Edit / Delete) ---
   if (nodesTableBody) {
@@ -1902,13 +1912,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Desktop Engine Controller (Tauri Integration) ---
-  const desktopRunnerController = document.getElementById('desktop-runner-controller');
+  const desktopRunnerController = document.getElementById('desktop-runner-controller') || document.getElementById('card-engine-controller');
   const desktopEngineStatus = document.getElementById('desktop-engine-status');
   const desktopStartBtn = document.getElementById('desktop-start-btn');
   const desktopStopBtn = document.getElementById('desktop-stop-btn');
   const desktopRestartBtn = document.getElementById('desktop-restart-btn');
-  const desktopLogConsole = document.getElementById('desktop-log-console');
-  const clearConsoleLogsBtn = document.getElementById('clear-console-logs-btn');
+  const desktopLogConsole = document.getElementById('desktop-logs-container') || document.getElementById('desktop-log-console');
+  const clearConsoleLogsBtn = document.getElementById('clear-desktop-logs-btn') || document.getElementById('clear-console-logs-btn');
 
   const isTauriEnv = () => {
     return typeof window.__TAURI_INTERNALS__ !== 'undefined' || (typeof window.__TAURI__ !== 'undefined' && typeof window.__TAURI__.core !== 'undefined');
