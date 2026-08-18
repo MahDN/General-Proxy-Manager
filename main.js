@@ -9,6 +9,7 @@ import {
   SUPPORTED_SING_BOX_VERSION,
   parseInput,
   normalizeNodes,
+  resequencePorts,
   validatePorts,
   generateConfig,
   validateGeneratedConfig,
@@ -326,25 +327,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   // --- Node Table & Summary UI ---
+  const getStartingPort = () => {
+    return parseInt(startPortInput?.value, 10) || 20801;
+  };
+
   const updateSummaryBadge = () => {
     const total = normalizedNodes.length;
-    const enabled = normalizedNodes.filter(n => n.enabled).length;
-    const startingPort = parseInt(startPortInput?.value, 10) || 20808;
-    const endPort = startingPort + Math.max(0, total - 1);
+    const enabledNodes = normalizedNodes.filter(n => n.enabled);
+    const enabled = enabledNodes.length;
+    const startingPort = getStartingPort();
 
     if (kpiTotalNodes) kpiTotalNodes.textContent = total;
     if (kpiEnabledNodes) kpiEnabledNodes.textContent = enabled;
-    if (kpiPortRange) kpiPortRange.textContent = total > 0 ? `${startingPort} - ${endPort}` : `${startingPort} - ${startingPort}`;
+    if (kpiPortRange) {
+      if (enabledNodes.length > 0) {
+        const minPort = enabledNodes[0].port;
+        const maxPort = enabledNodes[enabledNodes.length - 1].port;
+        kpiPortRange.textContent = `${minPort} - ${maxPort}`;
+      } else {
+        kpiPortRange.textContent = 'None';
+      }
+    }
 
     const totalLabel = langData?.summaryTotalNodes || 'Total';
     const enabledLabel = langData?.summaryEnabledNodes || 'Enabled';
     const rangeLabel = langData?.summaryPortRange || 'Port Range';
 
     if (nodesSummaryBadge) {
+      const rangeText = enabledNodes.length > 0 ? `${enabledNodes[0].port} - ${enabledNodes[enabledNodes.length - 1].port}` : 'None';
       nodesSummaryBadge.innerHTML = `
         <span class="text-indigo-400 font-semibold">${totalLabel}: ${total}</span> &bull; 
         <span class="text-emerald-400 font-semibold">${enabledLabel}: ${enabled}</span> &bull; 
-        <span class="text-slate-400">${rangeLabel}: ${startingPort} - ${endPort}</span>
+        <span class="text-slate-400">${rangeLabel}: ${rangeText}</span>
       `;
     }
   };
@@ -357,7 +371,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       [normalizedNodes[i], normalizedNodes[j]] = [normalizedNodes[j], normalizedNodes[i]];
     }
 
-    const startingPort = parseInt(startPortInput?.value, 10) || 20808;
+    const startingPort = getStartingPort();
+    resequencePorts(normalizedNodes, startingPort);
     normalizedNodes.forEach((node, idx) => {
       const num = idx + 1;
       const padded = num < 10 ? `0${num}` : `${num}`;
@@ -367,11 +382,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       node.inboundTag = `proxy-in-${padded}`;
       node.outboundTag = `proxy-out-${padded}`;
       node.dnsTag = `dns-proxy-${padded}`;
-      node.port = startingPort + idx;
     });
 
     renderNodeTable();
     renderTestTable();
+    updateSummaryBadge();
     if (currentGeneratedConfig) {
       handleGenerate();
     }
@@ -478,6 +493,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         </span>
       ` : '';
 
+      const portValue = node.enabled ? (node.port || '') : '';
+
       row.innerHTML = `
         <td class="p-3 text-center font-mono text-xs text-slate-500 font-bold">${node.displayIndex}</td>
         <td class="p-3 text-center">
@@ -494,7 +511,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </span>
         </td>
         <td class="p-3">
-          <input type="number" min="1" max="65535" value="${node.port}" ${node.enabled ? '' : 'disabled'} class="node-port-input w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="number" min="1" max="65535" value="${portValue}" placeholder="-" ${node.enabled ? '' : 'disabled'} class="node-port-input w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </td>
         <td class="p-3">
           <span class="font-mono text-[11px] text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">${node.outboundTag}</span>
@@ -523,8 +540,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       normalizedNodes.forEach(n => {
         n.enabled = checked;
       });
+      resequencePorts(normalizedNodes, getStartingPort());
       renderNodeTable();
       renderTestTable();
+      updateSummaryBadge();
       if (outputSection && !outputSection.classList.contains('hidden')) {
         handleGenerate();
       }
@@ -569,10 +588,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       rawOutbounds = parseInput(trimmed);
-      const startingPort = parseInt(startPortInput?.value, 10) || 20808;
+      const startingPort = getStartingPort();
       const listenAddress = listenAddressInput?.value.trim() || '127.0.0.1';
       normalizedNodes = normalizeNodes(rawOutbounds, startingPort, listenAddress);
+      tab2SelectionInitialized = false;
+      testSelectedNodeIds.clear();
       renderNodeTable();
+      renderTestTable();
+      updateSummaryBadge();
     } catch (err) {
       console.warn('Input parsing warning:', err.message);
       resetState();
@@ -584,6 +607,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     rawOutbounds = [];
     normalizedNodes = [];
     currentGeneratedConfig = null;
+    tab2SelectionInitialized = false;
+    testSelectedNodeIds.clear();
     if (nodesTableSection) nodesTableSection.classList.add('hidden');
     if (outputSection) outputSection.classList.add('hidden');
     if (generateBtn) {
@@ -965,15 +990,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (outputSection && !outputSection.classList.contains('hidden')) {
         handleGenerate();
-      }
-    });
-  }
-
   if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', closeEditModal);
   if (cancelEditNodeBtn) cancelEditNodeBtn.addEventListener('click', closeEditModal);
 
   // --- Connection Test & IP Inspector Tab Logic ---
   const testSelectedNodeIds = new Set();
+  let tab2SelectionInitialized = false;
 
   const sortTestNodesList = (nodes) => {
     return [...nodes].sort((a, b) => {
@@ -1016,9 +1038,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Default select all if empty
-    if (testSelectedNodeIds.size === 0) {
+    // Default select all only once upon fresh import
+    if (!tab2SelectionInitialized && normalizedNodes.length > 0) {
       normalizedNodes.forEach(n => testSelectedNodeIds.add(n.id));
+      tab2SelectionInitialized = true;
     }
 
     const selectAllTab2 = document.getElementById('select-all-nodes-tab2');
@@ -1109,6 +1132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
+      const displayPort = node.enabled ? (node.port || '-') : '-';
+
       row.innerHTML = `
         <td class="p-3 text-center text-slate-500 font-bold">${node.displayIndex}</td>
         <td class="p-3 text-center">
@@ -1118,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="font-medium text-slate-200 truncate max-w-xs">${node.originalTag}</div>
           <div class="text-[11px] text-slate-500 font-mono">${node.rawOutbound.server || ''}:${node.rawOutbound.server_port || ''}</div>
         </td>
-        <td class="p-3 text-indigo-400 font-bold font-mono">${node.port}</td>
+        <td class="p-3 text-indigo-400 font-bold font-mono">${displayPort}</td>
         <td class="p-3 test-status-cell">${statusHtml}</td>
         <td class="p-3 test-ping-cell text-slate-400">${pingHtml}</td>
         <td class="p-3 test-ip-cell text-slate-400 font-mono text-xs truncate max-w-xs">${ipHtml}</td>
@@ -1142,6 +1167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (selectAllNodesTab2) {
     selectAllNodesTab2.addEventListener('change', (e) => {
       const checked = e.target.checked;
+      tab2SelectionInitialized = true;
       if (checked) {
         normalizedNodes.forEach(n => testSelectedNodeIds.add(n.id));
       } else {
@@ -1182,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Real-Delay Ping Tester ---
   const testSingleRealPing = async (index) => {
     const node = normalizedNodes[index];
-    if (!node) return;
+    if (!node || !node.enabled || !node.port) return;
 
     const prevRes = testResultsMap.get(node.id) || {};
     testResultsMap.set(node.id, { ...prevRes, status: 'testing', ping: '...' });
@@ -1252,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Egress IP Fetcher ---
   const fetchSingleNodeIp = async (index) => {
     const node = normalizedNodes[index];
-    if (!node) return;
+    if (!node || !node.enabled || !node.port) return;
 
     const prevRes = testResultsMap.get(node.id) || {};
     testResultsMap.set(node.id, { ...prevRes, ip: '...' });
@@ -1302,17 +1328,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderTestTable();
   };
 
+  // --- Smart Engine Prompt Modal & Execution Guard ---
+  let isSingboxEngineRunning = false;
+  let pendingTestExecution = null;
+
+  const enginePromptModal = document.getElementById('engine-prompt-modal');
+  const closeEnginePromptBtn = document.getElementById('close-engine-prompt-btn');
+  const promptStartEngineBtn = document.getElementById('prompt-start-engine-btn');
+
+  const ensureEngineRunningForTests = (callback) => {
+    if (isTauriEnv() && !isSingboxEngineRunning) {
+      pendingTestExecution = callback;
+      if (enginePromptModal) {
+        enginePromptModal.classList.remove('hidden');
+      }
+      return false;
+    }
+    return true;
+  };
+
+  if (closeEnginePromptBtn && enginePromptModal) {
+    closeEnginePromptBtn.addEventListener('click', () => {
+      enginePromptModal.classList.add('hidden');
+      pendingTestExecution = null;
+    });
+  }
+
+  if (promptStartEngineBtn && enginePromptModal) {
+    promptStartEngineBtn.addEventListener('click', async () => {
+      enginePromptModal.classList.add('hidden');
+      await handleStartEngine();
+      setTimeout(() => {
+        if (typeof pendingTestExecution === 'function') {
+          pendingTestExecution();
+          pendingTestExecution = null;
+        }
+      }, 700);
+    });
+  }
+
   // Batch Ping All Selected
   const testAllPingBtn = document.getElementById('test-all-ping-btn');
   if (testAllPingBtn) {
     testAllPingBtn.addEventListener('click', async () => {
-      testAllPingBtn.disabled = true;
-      for (let i = 0; i < normalizedNodes.length; i++) {
-        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
-          await testSingleRealPing(i);
+      const execute = async () => {
+        testAllPingBtn.disabled = true;
+        for (let i = 0; i < normalizedNodes.length; i++) {
+          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+            await testSingleRealPing(i);
+          }
         }
+        testAllPingBtn.disabled = false;
+      };
+
+      if (ensureEngineRunningForTests(execute)) {
+        await execute();
       }
-      testAllPingBtn.disabled = false;
     });
   }
 
@@ -1320,27 +1391,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fetchAllIpBtn = document.getElementById('fetch-all-ip-btn');
   if (fetchAllIpBtn) {
     fetchAllIpBtn.addEventListener('click', async () => {
-      fetchAllIpBtn.disabled = true;
-      for (let i = 0; i < normalizedNodes.length; i++) {
-        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
-          await fetchSingleNodeIp(i);
+      const execute = async () => {
+        fetchAllIpBtn.disabled = true;
+        for (let i = 0; i < normalizedNodes.length; i++) {
+          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+            await fetchSingleNodeIp(i);
+          }
         }
+        fetchAllIpBtn.disabled = false;
+      };
+
+      if (ensureEngineRunningForTests(execute)) {
+        await execute();
       }
-      fetchAllIpBtn.disabled = false;
     });
   }
 
   // Batch Test All (Ping + IP)
   if (testAllBtn) {
     testAllBtn.addEventListener('click', async () => {
-      testAllBtn.disabled = true;
-      for (let i = 0; i < normalizedNodes.length; i++) {
-        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
-          await testSingleRealPing(i);
-          await fetchSingleNodeIp(i);
+      const execute = async () => {
+        testAllBtn.disabled = true;
+        for (let i = 0; i < normalizedNodes.length; i++) {
+          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+            await testSingleRealPing(i);
+            await fetchSingleNodeIp(i);
+          }
         }
+        testAllBtn.disabled = false;
+      };
+
+      if (ensureEngineRunningForTests(execute)) {
+        await execute();
       }
-      testAllBtn.disabled = false;
     });
   }
 
@@ -1349,14 +1432,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const pingBtn = e.target.closest('.single-ping-btn');
       if (pingBtn) {
         const idx = parseInt(pingBtn.dataset.index, 10);
-        testSingleRealPing(idx);
+        if (ensureEngineRunningForTests(() => testSingleRealPing(idx))) {
+          testSingleRealPing(idx);
+        }
         return;
       }
 
       const ipBtn = e.target.closest('.single-ip-btn');
       if (ipBtn) {
         const idx = parseInt(ipBtn.dataset.index, 10);
-        fetchSingleNodeIp(idx);
+        if (ensureEngineRunningForTests(() => fetchSingleNodeIp(idx))) {
+          fetchSingleNodeIp(idx);
+        }
         return;
       }
     });
@@ -1366,6 +1453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = e.target.closest('tr');
         if (!row) return;
         const nodeId = row.dataset.nodeId;
+        tab2SelectionInitialized = true;
         if (e.target.checked) {
           testSelectedNodeIds.add(nodeId);
         } else {
@@ -1653,11 +1741,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (e.target.classList.contains('node-delete-btn') || e.target.closest('.node-delete-btn')) {
         if (confirm(`Delete node "${normalizedNodes[index].originalTag}"?`)) {
           normalizedNodes.splice(index, 1);
-          const startingPort = parseInt(startPortInput?.value, 10) || 20808;
-          const listenAddress = listenAddressInput?.value.trim() || '127.0.0.1';
-          normalizedNodes = normalizeNodes(normalizedNodes.map(n => n.rawOutbound), startingPort, listenAddress);
+          resequencePorts(normalizedNodes, getStartingPort());
           renderNodeTable();
           renderTestTable();
+          updateSummaryBadge();
           if (outputSection && !outputSection.classList.contains('hidden')) {
             handleGenerate();
           }
@@ -1674,8 +1761,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (e.target.classList.contains('node-enabled-checkbox')) {
         node.enabled = e.target.checked;
+        resequencePorts(normalizedNodes, getStartingPort());
         renderNodeTable();
         renderTestTable();
+        updateSummaryBadge();
+        if (outputSection && !outputSection.classList.contains('hidden')) {
+          handleGenerate();
+        }
       }
     });
 
@@ -1696,6 +1788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             inp.classList.remove('border-red-500', 'focus:ring-red-500');
           });
         }
+        updateSummaryBadge();
       }
     });
   }
@@ -1757,12 +1850,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (startPortInput) {
     startPortInput.addEventListener('input', () => {
-      const startingPort = parseInt(startPortInput.value, 10) || 20808;
-      normalizedNodes.forEach((node, index) => {
-        node.port = startingPort + index;
-      });
+      const startingPort = getStartingPort();
+      resequencePorts(normalizedNodes, startingPort);
       renderNodeTable();
       renderTestTable();
+      updateSummaryBadge();
+      if (outputSection && !outputSection.classList.contains('hidden')) {
+        handleGenerate();
+      }
     });
   }
 
@@ -1849,6 +1944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   const updateEngineStatusUI = (running, pid = null) => {
+    isSingboxEngineRunning = running;
     if (!desktopEngineStatus) return;
     if (running) {
       desktopEngineStatus.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-950 border border-emerald-800 text-emerald-400 flex items-center gap-1.5';
@@ -1900,7 +1996,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         appendConsoleLog(`[ERR] Failed to launch engine: ${err}`);
       }
     } else {
-      appendConsoleLog(`[SYSTEM] Browser Simulation: Launching local gateway on port ${currentGeneratedConfig.inbounds?.[0]?.listen_port || 20808}...`);
+      const firstPort = currentGeneratedConfig.inbounds?.[0]?.listen_port || getStartingPort();
+      appendConsoleLog(`[SYSTEM] Browser Simulation: Launching local gateway on port ${firstPort}...`);
       updateEngineStatusUI(true, Math.floor(Math.random() * 8000 + 1000));
       appendConsoleLog(`[INFO] sing-box listening on ${normalizedNodes.filter(n => n.enabled).length} mixed local proxy ports.`);
     }
@@ -1937,6 +2034,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // --- Accordion Expand/Collapse Logic ---
+  const initAccordions = () => {
+    document.querySelectorAll('.accordion-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') || e.target.closest('label') || e.target.closest('a')) {
+          return;
+        }
+        const card = header.closest('.accordion-card');
+        if (card) {
+          card.classList.toggle('collapsed');
+        }
+      });
+    });
+  };
+
+  // --- Legacy Script Tools Toggle ---
+  const toggleLegacyToolsBtn = document.getElementById('toggle-legacy-tools-btn');
+  let showLegacyTools = false;
+  if (toggleLegacyToolsBtn) {
+    toggleLegacyToolsBtn.addEventListener('click', () => {
+      showLegacyTools = !showLegacyTools;
+      document.querySelectorAll('.legacy-tool-card').forEach(el => {
+        if (showLegacyTools) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+      toggleLegacyToolsBtn.classList.toggle('bg-indigo-600/20', showLegacyTools);
+      toggleLegacyToolsBtn.classList.toggle('text-indigo-400', showLegacyTools);
+      toggleLegacyToolsBtn.classList.toggle('border-indigo-500/40', showLegacyTools);
+    });
+  }
+
   // Check Tauri Log Listener
   if (window.__TAURI__ && window.__TAURI__.event && typeof window.__TAURI__.event.listen === 'function') {
     window.__TAURI__.event.listen('singbox-log', (event) => {
@@ -1947,6 +2078,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Initial Synchronous Startup ---
   initTheme();
   initLanguage();
+  initAccordions();
   singBoxTemplate = await fetchTemplate();
   updateSummaryBadge();
   updateRunnerCommand();

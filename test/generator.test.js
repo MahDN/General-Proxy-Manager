@@ -524,3 +524,29 @@ test('TEST 26: Parse Base64 subscription string containing vless:// links', () =
   const check = runSingBoxCheck(config);
   assert.equal(check.success, true, check.error);
 });
+
+test('TEST 27: Resequencing ports without gaps when some nodes are disabled', () => {
+  const raw = [sampleVless1, sampleVless2, sampleVless1, sampleVless2, sampleVless1];
+  const normalized = normalizeNodes(raw, 20801);
+  assert.equal(normalized.length, 5);
+
+  // Disable node 1 and node 3 (0-indexed: 1 and 3)
+  normalized[1].enabled = false;
+  normalized[3].enabled = false;
+
+  // Resequence
+  import('../core-generator.js').then(({ resequencePorts }) => {
+    resequencePorts(normalized, 20801);
+    assert.equal(normalized[0].port, 20801);
+    assert.equal(normalized[1].port, null);
+    assert.equal(normalized[2].port, 20802);
+    assert.equal(normalized[3].port, null);
+    assert.equal(normalized[4].port, 20803);
+
+    const config = generateConfig({ normalizedNodes: normalized });
+    assert.equal(config.inbounds.length, 3);
+    assert.equal(config.inbounds[0].listen_port, 20801);
+    assert.equal(config.inbounds[1].listen_port, 20802);
+    assert.equal(config.inbounds[2].listen_port, 20803);
+  });
+});

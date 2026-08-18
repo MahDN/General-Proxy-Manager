@@ -226,6 +226,12 @@
                         <span data-lang="targetVersionLabel">sing-box 1.13.18</span>
                     </div>
 
+                    <!-- Toggle Legacy Script Tools Button -->
+                    <button id="toggle-legacy-tools-btn" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border border-slate-700/80 transition-all flex items-center gap-1.5 shadow-sm" title="Toggle Manual Script & Terminal Tools">
+                        <span>🛠️</span>
+                        <span class="hidden xl:inline" data-lang="toggleToolsBtn">Script Tools</span>
+                    </button>
+
                     <!-- Theme Switcher (Dark / Light) -->
                     <button id="theme-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-700/80 transition-all shadow-sm flex items-center justify-center" title="Toggle Theme" aria-label="Toggle Theme">
                         <svg id="theme-icon-sun" class="w-4 h-4 text-amber-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -317,7 +323,7 @@
             <div class="glass-card rounded-xl p-3.5 sm:p-4 flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400" data-lang="summaryPortRange">Port Range</p>
-                    <p id="kpi-port-range" class="text-sm sm:text-base font-bold text-blue-400 font-mono mt-1">10808 - 10808</p>
+                    <p id="kpi-port-range" class="text-sm sm:text-base font-bold text-blue-400 font-mono mt-1">20801 - 20801</p>
                 </div>
                 <div class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -345,108 +351,115 @@
                 <!-- Main Workspace (8 Cols) -->
                 <div class="lg:col-span-8 space-y-6">
                     
-                    <!-- 1. Import Proxy Nodes Card -->
-                    <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2.5" data-lang="step1Title">
+                    <!-- 1. Import Proxy Nodes Card (Open by default) -->
+                    <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card" id="card-import-nodes">
+                        <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                            <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">01</span>
-                                <span>Import Proxy Nodes</span>
-                            </h2>
-                            <button id="clear-input-btn" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">Clear All</button>
-                        </div>
-                        <p class="text-xs text-slate-400" data-lang="step1Desc">
-                            Paste your outbounds array, full sing-box JSON configuration, VLESS share links, or subscription URL.
-                        </p>
-
-                        <!-- Input Textarea -->
-                        <div class="relative">
-                            <textarea id="nodes-input" class="custom-scrollbar font-mono text-xs w-full h-44 p-3.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-600" placeholder="[&#10;  {&#10;    &quot;type&quot;: &quot;vless&quot;,&#10;    &quot;tag&quot;: &quot;Germany-01&quot;,&#10;    &quot;server&quot;: &quot;de.example.com&quot;,&#10;    &quot;server_port&quot;: 443,&#10;    &quot;uuid&quot;: &quot;...&quot;&#10;  }&#10;]&#10;... or vless:// links (multi-line)"></textarea>
-                        </div>
-
-                        <!-- Import Toolbar (File Upload & Drag Hint) -->
-                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-                            <div class="flex items-center gap-2">
-                                <label for="file-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 font-medium hover:bg-indigo-500/20 border border-indigo-500/20 transition-all" data-lang="uploadFile">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                    <span>Select File</span>
-                                </label>
-                                <span class="text-slate-500" data-lang="dropHint">or drag and drop a config file here</span>
-                                <input type="file" id="file-input" class="hidden" accept=".txt,.json,.conf">
+                                <h2 class="text-base sm:text-lg font-bold text-white" data-lang="step1Title">Import Proxy Nodes</h2>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="clear-input-btn" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">Clear All</button>
+                                <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             </div>
                         </div>
 
-                        <!-- Subscription Fetch Card -->
-                        <div class="mt-4 pt-4 border-t border-slate-800/80 space-y-2.5">
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="url" id="subscription-url-input" class="flex-1 text-xs p-2.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono placeholder:text-slate-600" placeholder="https://example.com/api/v1/client/subscribe?token=...">
-                                <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg border border-slate-700 transition-all shrink-0" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" id="use-cors-proxy" class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer">
-                                <label for="use-cors-proxy" class="text-xs text-slate-400 cursor-pointer select-none" data-lang="useCorsProxyLabel">
-                                    Use third-party CORS proxy fallback (if direct connection fails or CORS is blocked)
-                                </label>
-                            </div>
-                            <p class="text-[11px] text-slate-500" data-lang="corsNotice">
-                                Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway.
+                        <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                            <p class="text-xs text-slate-400" data-lang="step1Desc">
+                                Paste your outbounds array, full sing-box JSON configuration, VLESS share links, or subscription URL.
                             </p>
+
+                            <!-- Input Textarea -->
+                            <div class="relative">
+                                <textarea id="nodes-input" class="custom-scrollbar font-mono text-xs w-full h-44 p-3.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-600" placeholder="[&#10;  {&#10;    &quot;type&quot;: &quot;vless&quot;,&#10;    &quot;tag&quot;: &quot;Germany-01&quot;,&#10;    &quot;server&quot;: &quot;de.example.com&quot;,&#10;    &quot;server_port&quot;: 443,&#10;    &quot;uuid&quot;: &quot;...&quot;&#10;  }&#10;]&#10;... or vless:// links (multi-line)"></textarea>
+                            </div>
+
+                            <!-- Import Toolbar (File Upload & Drag Hint) -->
+                            <div class="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
+                                <div class="flex items-center gap-2">
+                                    <label for="file-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 font-medium hover:bg-indigo-500/20 border border-indigo-500/20 transition-all" data-lang="uploadFile">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="13" x2="12" y2="15"/></svg>
+                                        <span>Select File</span>
+                                    </label>
+                                    <span class="text-slate-500" data-lang="dropHint">or drag and drop a config file here</span>
+                                    <input type="file" id="file-input" class="hidden" accept=".txt,.json,.conf">
+                                </div>
+                            </div>
+
+                            <!-- Subscription Fetch Card -->
+                            <div class="mt-4 pt-4 border-t border-slate-800/80 space-y-2.5">
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="url" id="subscription-url-input" class="flex-1 text-xs p-2.5 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono placeholder:text-slate-600" placeholder="https://example.com/api/v1/client/subscribe?token=...">
+                                    <button id="fetch-sub-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg border border-slate-700 transition-all shrink-0" data-lang="fetchSubscriptionBtn">Fetch Subscription</button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="use-cors-proxy" class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer">
+                                    <label for="use-cors-proxy" class="text-xs text-slate-400 cursor-pointer select-none" data-lang="useCorsProxyLabel">
+                                        Use third-party CORS proxy fallback (if direct connection fails or CORS is blocked)
+                                    </label>
+                                </div>
+                                <p class="text-[11px] text-slate-500" data-lang="corsNotice">
+                                    Privacy Notice: By default, subscriptions are fetched directly in your browser. Enabling the fallback option routes the URL through a public CORS proxy gateway.
+                                </p>
+                            </div>
                         </div>
                     </section>
 
-                    <!-- 2. Interactive Usable Nodes Table -->
-                    <section id="nodes-table-section" class="glass-panel rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl hidden">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
+                    <!-- Usable Nodes Table Card (Open by default once populated) -->
+                    <section id="nodes-table-section" class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card hidden">
+                        <div class="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-3 accordion-header cursor-pointer select-none">
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-slate-200 text-sm sm:text-base flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                                    <span data-lang="usableNodesTitle">Imported Usable Proxy Nodes</span>
-                                </h3>
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                <h3 class="font-bold text-slate-200 text-sm sm:text-base" data-lang="usableNodesTitle">Imported Usable Proxy Nodes</h3>
                             </div>
-                            <div id="nodes-summary-badge" class="text-xs font-mono bg-slate-900/90 px-3 py-1 rounded-lg text-slate-300 border border-slate-800">
-                                <!-- Populated dynamically -->
+                            <div class="flex items-center gap-3">
+                                <div id="nodes-summary-badge" class="text-xs font-mono bg-slate-900/90 px-3 py-1 rounded-lg text-slate-300 border border-slate-800"></div>
+                                <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             </div>
                         </div>
 
-                        <!-- Table Action & Search Toolbar -->
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
-                            <div class="relative flex-1">
-                                <input type="text" id="nodes-search-input" placeholder="Search nodes by name, host, port..." class="w-full text-xs py-2 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
-                                <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                            <!-- Table Action & Search Toolbar -->
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+                                <div class="relative flex-1">
+                                    <input type="text" id="nodes-search-input" placeholder="Search nodes by name, host, port..." class="w-full text-xs py-2 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
+                                    <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                </div>
+                                <button id="shuffle-nodes-btn" class="px-3.5 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm" data-lang="shuffleNodesBtn">
+                                    🔀 Shuffle Order
+                                </button>
                             </div>
-                            <button id="shuffle-nodes-btn" class="px-3.5 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm" data-lang="shuffleNodesBtn">
-                                🔀 Shuffle Order
-                            </button>
-                        </div>
 
-                        <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
-                                    <tr>
-                                        <th id="sort-nodes-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
-                                            <span data-lang="tableHeaderIndex">#</span> <span class="sort-icon text-[10px]">↕</span>
-                                        </th>
-                                        <th class="p-3 text-center w-14 select-none">
-                                            <div class="flex items-center justify-center">
-                                                <input type="checkbox" id="select-all-nodes-tab1" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
-                                            </div>
-                                        </th>
-                                        <th id="sort-nodes-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
-                                            <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
-                                        </th>
-                                        <th id="sort-nodes-type" class="p-3 w-24 cursor-pointer hover:text-white transition-colors" title="Sort by Type">
-                                            <span data-lang="tableHeaderType">Type</span> <span class="sort-icon text-[10px]">↕</span>
-                                        </th>
-                                        <th id="sort-nodes-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
-                                            <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
-                                        </th>
-                                        <th class="p-3 w-32" data-lang="tableHeaderOutbound">Outbound Tag</th>
-                                        <th class="p-3 text-center w-24" data-lang="tableHeaderActions">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="nodes-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40">
-                                    <!-- Populated dynamically -->
-                                </tbody>
-                            </table>
+                            <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                                        <tr>
+                                            <th id="sort-nodes-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
+                                                <span data-lang="tableHeaderIndex">#</span> <span class="sort-icon text-[10px]">↕</span>
+                                            </th>
+                                            <th class="p-3 text-center w-14 select-none">
+                                                <div class="flex items-center justify-center">
+                                                    <input type="checkbox" id="select-all-nodes-tab1" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
+                                                </div>
+                                            </th>
+                                            <th id="sort-nodes-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
+                                                <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
+                                            </th>
+                                            <th id="sort-nodes-type" class="p-3 w-24 cursor-pointer hover:text-white transition-colors" title="Sort by Type">
+                                                <span data-lang="tableHeaderType">Type</span> <span class="sort-icon text-[10px]">↕</span>
+                                            </th>
+                                            <th id="sort-nodes-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
+                                                <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
+                                            </th>
+                                            <th class="p-3 w-32" data-lang="tableHeaderOutbound">Outbound Tag</th>
+                                            <th class="p-3 text-center w-24" data-lang="tableHeaderActions">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="nodes-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </section>
 
@@ -455,13 +468,17 @@
                 <!-- Right Sidebar Settings & CTA (4 Cols) -->
                 <div class="lg:col-span-4 space-y-6">
                     
-                    <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
-                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2.5">
-                            <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">02</span>
-                            <span data-lang="step2Title">Local Proxy Settings</span>
-                        </h2>
+                    <!-- 2. Local Proxy Settings Card (Collapsed by default) -->
+                    <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed" id="card-local-settings">
+                        <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">02</span>
+                                <h2 class="text-base sm:text-lg font-bold text-white" data-lang="step2Title">Local Proxy Settings</h2>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
 
-                        <div class="space-y-4 text-xs">
+                        <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 text-xs accordion-content">
                             <div>
                                 <label for="listen-address" class="block font-medium text-slate-300 mb-1" data-lang="listenAddressLabel">Listen Address</label>
                                 <input type="text" id="listen-address" value="127.0.0.1" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -470,8 +487,8 @@
 
                             <div>
                                 <label for="start-port" class="block font-medium text-slate-300 mb-1" data-lang="startPortLabel">Starting Port Number</label>
-                                <input type="number" id="start-port" value="20808" min="1" max="65535" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <p class="text-[11px] text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 20808, 20809...</p>
+                                <input type="number" id="start-port" value="20801" min="1" max="65535" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-[11px] text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 20801, 20802...</p>
                             </div>
 
                             <div>
@@ -488,14 +505,19 @@
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        <!-- DNS & Advanced Settings Accordion -->
-                        <div class="pt-4 border-t border-slate-800 space-y-4 text-xs">
-                            <h3 class="font-bold text-slate-300 flex items-center gap-2" data-lang="step3Title">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                                <span>DNS & Advanced</span>
-                            </h3>
+                    <!-- 3. DNS Configuration Card (Collapsed by default) -->
+                    <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed" id="card-dns-settings">
+                        <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">03</span>
+                                <h2 class="text-base sm:text-lg font-bold text-white" data-lang="step3Title">DNS Configuration</h2>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
 
+                        <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 text-xs accordion-content">
                             <div>
                                 <label for="bootstrap-dns" class="block font-medium text-slate-300 mb-1" data-lang="bootstrapDnsLabel">Bootstrap DNS (local_dns)</label>
                                 <select id="bootstrap-dns" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -524,7 +546,20 @@
                                     <option value="ipv6_only">ipv6_only</option>
                                 </select>
                             </div>
+                        </div>
+                    </section>
 
+                    <!-- 4. Advanced Settings Card (Collapsed by default) -->
+                    <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed" id="card-advanced-settings">
+                        <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-mono font-bold border border-indigo-500/30">04</span>
+                                <h2 class="text-base sm:text-lg font-bold text-white" data-lang="step4Title">Advanced Settings</h2>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+
+                        <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 text-xs accordion-content">
                             <div>
                                 <label for="log-level" class="block font-medium text-slate-300 mb-1" data-lang="logLevelLabel">Log Level</label>
                                 <select id="log-level" class="w-full p-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -536,14 +571,14 @@
                                 </select>
                             </div>
                         </div>
-
-                        <!-- Big Generate Button -->
-                        <div class="pt-2">
-                            <button id="generate-btn" class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2" disabled data-lang="generateBtn">
-                                <span>Please import proxy nodes first</span>
-                            </button>
-                        </div>
                     </section>
+
+                    <!-- Big Generate Button -->
+                    <div>
+                        <button id="generate-btn" class="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2" disabled data-lang="generateBtn">
+                            <span>Please import proxy nodes first</span>
+                        </button>
+                    </div>
 
                 </div>
             </div>
@@ -594,7 +629,7 @@
                             <!-- Step 1: Local Inbound -->
                             <div class="p-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 space-y-1 shadow-sm">
                                 <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">1. Local Inbound</span>
-                                <div id="diagram-inbound-port" class="font-mono font-bold text-xs text-white">127.0.0.1:20808</div>
+                                <div id="diagram-inbound-port" class="font-mono font-bold text-xs text-white">127.0.0.1:20801</div>
                                 <span class="inline-block px-1.5 py-0.5 text-[9px] font-mono rounded bg-indigo-500/10 text-indigo-300">Mixed (SOCKS5+HTTP)</span>
                             </div>
 
@@ -641,8 +676,8 @@
                     </div>
                     <textarea id="config-output" class="custom-scrollbar font-mono text-xs w-full h-80 p-4 bg-slate-950 text-emerald-400 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly></textarea>
                     
-                    <!-- Run Command Helper Card -->
-                    <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl space-y-2.5">
+                    <!-- Run Command Helper Card (Legacy Tool) -->
+                    <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl space-y-2.5 legacy-tool-card hidden">
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2" data-lang="runCommandTitle">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-400"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -668,77 +703,122 @@
         <!-- TAB 2: CONNECTION & IP TEST                                    -->
         <!-- ============================================================== -->
         <div id="tab-testing" class="tab-pane hidden space-y-6">
-            <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
-                <!-- Top Action Header -->
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="testTabTitle">
-                            Proxy Node Health & IP Inspector
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-1" data-lang="testTabDesc">
-                            Test individual or all local endpoints when sing-box is running locally on this machine.
-                        </p>
+            
+            <!-- 1. Proxy Node Health & IP Inspector (Open by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card" id="card-test-inspector">
+                <div class="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="testTabTitle">
+                                Proxy Node Health & IP Inspector
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5" data-lang="testTabDesc">
+                                Test individual or all local endpoints when sing-box is running locally on this machine.
+                            </p>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        <button id="test-all-ping-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllPingBtn">
+                    <div class="flex flex-wrap items-center gap-2.5" onclick="event.stopPropagation()">
+                        <button id="test-all-ping-btn" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllPingBtn">
                             ⚡ Real Delay Ping (All)
                         </button>
-                        <button id="fetch-all-ip-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="fetchAllIpBtn">
+                        <button id="fetch-all-ip-btn" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="fetchAllIpBtn">
                             🌐 Fetch Egress IPs (All)
                         </button>
-                        <button id="test-all-btn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllBtn">
+                        <button id="test-all-btn" class="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                             <span>Test All</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Test Search Bar -->
-                <div class="relative">
-                    <input type="text" id="test-search-input" placeholder="Search test nodes by name, port, IP..." class="w-full text-xs py-2.5 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
-                    <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <!-- Test Search Bar -->
+                    <div class="relative">
+                        <input type="text" id="test-search-input" placeholder="Search test nodes by name, port, IP..." class="w-full text-xs py-2.5 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
+                        <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+
+                    <!-- Test Results Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                                <tr>
+                                    <th id="sort-test-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
+                                        <span>#</span> <span class="sort-icon text-[10px]">↕</span>
+                                    </th>
+                                    <th class="p-3 text-center w-12 select-none">
+                                        <div class="flex items-center justify-center">
+                                            <input type="checkbox" id="select-all-nodes-tab2" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
+                                        </div>
+                                    </th>
+                                    <th id="sort-test-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
+                                        <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
+                                    </th>
+                                    <th id="sort-test-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
+                                        <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
+                                    </th>
+                                    <th class="p-3 w-32" data-lang="colStatus">Status</th>
+                                    <th id="sort-test-ping" class="p-3 w-36 cursor-pointer hover:text-white transition-colors" title="Sort by Latency">
+                                        <span data-lang="colPing">Latency (Real Ping)</span> <span class="sort-icon text-[10px]">↕</span>
+                                    </th>
+                                    <th id="sort-test-ip" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by IP">
+                                        <span data-lang="colIp">Detected Egress IP</span> <span class="sort-icon text-[10px]">↕</span>
+                                    </th>
+                                    <th class="p-3 text-center w-36" data-lang="tableHeaderActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="test-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40 font-mono text-xs">
+                                <tr>
+                                    <td colspan="8" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Endpoint Settings (Collapsed by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed" id="card-endpoint-settings">
+                <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                    <h3 class="font-bold text-slate-200 text-sm sm:text-base flex items-center gap-2" data-lang="testSettingsTitle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span>Endpoint Settings</span>
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                            <button id="save-endpoints-btn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors" data-lang="saveEndpointsBtn">Save Endpoints</button>
+                            <button id="reset-endpoints-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 transition-colors" data-lang="resetEndpointsBtn">Reset Defaults</button>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
                 </div>
 
-                <!-- Test Results Table -->
-                <div class="overflow-x-auto rounded-xl border border-slate-800 custom-scrollbar">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 select-none">
-                            <tr>
-                                <th id="sort-test-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
-                                    <span>#</span> <span class="sort-icon text-[10px]">↕</span>
-                                </th>
-                                <th class="p-3 text-center w-12 select-none">
-                                    <div class="flex items-center justify-center">
-                                        <input type="checkbox" id="select-all-nodes-tab2" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
-                                    </div>
-                                </th>
-                                <th id="sort-test-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
-                                    <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
-                                </th>
-                                <th id="sort-test-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
-                                    <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
-                                </th>
-                                <th class="p-3 w-32" data-lang="colStatus">Status</th>
-                                <th id="sort-test-ping" class="p-3 w-36 cursor-pointer hover:text-white transition-colors" title="Sort by Latency">
-                                    <span data-lang="colPing">Latency (Real Ping)</span> <span class="sort-icon text-[10px]">↕</span>
-                                </th>
-                                <th id="sort-test-ip" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by IP">
-                                    <span data-lang="colIp">Detected Egress IP</span> <span class="sort-icon text-[10px]">↕</span>
-                                </th>
-                                <th class="p-3 text-center w-36" data-lang="tableHeaderActions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="test-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40 font-mono text-xs">
-                            <tr>
-                                <td colspan="8" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label for="ping-test-url" class="block font-medium text-slate-400 mb-1" data-lang="pingUrlLabel">Ping Latency Test URL</label>
+                            <input type="url" id="ping-test-url" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label for="ip-lookup-url" class="block font-medium text-slate-400 mb-1" data-lang="ipUrlLabel">IP Lookup Service URL</label>
+                            <input type="url" id="ip-lookup-url" value="https://api.ipify.org?format=json" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Real-Delay Tester Downloads (Legacy Tool - Collapsed by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed legacy-tool-card hidden" id="card-real-delay-downloads">
+                <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">📥</span>
+                        <h3 class="font-bold text-slate-200 text-sm sm:text-base">Real-Delay Tester Script & Downloads</h3>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
 
-                <!-- Bottom Section: Endpoint Settings, Real-Delay Download Box & Manual Probe Card -->
-                <div class="space-y-4 pt-4 border-t border-slate-800/80">
-                    <!-- Real-Delay Testing Info & Script Action Bar -->
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
                     <div class="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
                         <div class="flex items-start gap-2.5">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -755,177 +835,160 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    <!-- Manual Single Port Probe Card -->
-                    <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-md">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                                <h3 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2" data-lang="manualTestTitle">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                                    <span>Manual Single Port Real-Delay Probe</span>
-                                </h3>
-                                <p class="text-[11px] text-slate-400 mt-0.5" data-lang="manualTestDesc">
-                                    Test real proxy latency on a specific local port after starting sing-box, with one-click cURL generator.
-                                </p>
-                            </div>
+            <!-- 4. Manual Single Port Probe (Legacy Tool - Collapsed by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed legacy-tool-card hidden" id="card-manual-probe">
+                <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">⚡</span>
+                        <h3 class="font-bold text-slate-200 text-sm sm:text-base" data-lang="manualTestTitle">Manual Single Port Real-Delay Probe</h3>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <p class="text-[11px] text-slate-400" data-lang="manualTestDesc">
+                        Test real proxy latency on a specific local port after starting sing-box, with one-click cURL generator.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <label for="manual-probe-port" class="block font-medium text-slate-400 mb-1" data-lang="manualPortLabel">Target Port</label>
+                            <input type="number" id="manual-probe-port" value="20801" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                            <div>
-                                <label for="manual-probe-port" class="block font-medium text-slate-400 mb-1" data-lang="manualPortLabel">Target Port</label>
-                                <input type="number" id="manual-probe-port" value="20808" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label for="manual-probe-ip" class="block font-medium text-slate-400 mb-1" data-lang="manualIpLabel">Local IP</label>
-                                <input type="text" id="manual-probe-ip" value="127.0.0.1" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label for="manual-probe-target" class="block font-medium text-slate-400 mb-1">Target Endpoint</label>
-                                <input type="url" id="manual-probe-target" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
+                        <div>
+                            <label for="manual-probe-ip" class="block font-medium text-slate-400 mb-1" data-lang="manualIpLabel">Local IP</label>
+                            <input type="text" id="manual-probe-ip" value="127.0.0.1" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
-
-                        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                            <div class="flex items-center gap-2">
-                                <button id="manual-probe-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5" data-lang="manualTestBtn">
-                                    ⚡ Probe Port
-                                </button>
-                                <button id="manual-copy-curl-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5" data-lang="copyCurlCmdBtn">
-                                    📋 Copy cURL Command
-                                </button>
-                            </div>
-                            <div id="manual-probe-result" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
-                                Ready to probe port
-                            </div>
+                        <div class="sm:col-span-2">
+                            <label for="manual-probe-target" class="block font-medium text-slate-400 mb-1">Target Endpoint</label>
+                            <input type="url" id="manual-probe-target" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
 
-                    <!-- Endpoint Settings Box -->
-                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2" data-lang="testSettingsTitle">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                                <span>Endpoint Settings</span>
-                            </h3>
-                            <div class="flex items-center gap-2">
-                                <button id="save-endpoints-btn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors" data-lang="saveEndpointsBtn">Save Endpoints</button>
-                                <button id="reset-endpoints-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 transition-colors" data-lang="resetEndpointsBtn">Reset to Defaults</button>
-                            </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div class="flex items-center gap-2">
+                            <button id="manual-probe-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5" data-lang="manualTestBtn">
+                                ⚡ Probe Port
+                            </button>
+                            <button id="manual-copy-curl-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5" data-lang="copyCurlCmdBtn">
+                                📋 Copy cURL Command
+                            </button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <div>
-                                <label for="ping-test-url" class="block font-medium text-slate-400 mb-1" data-lang="pingUrlLabel">Ping Latency Test URL</label>
-                                <input type="url" id="ping-test-url" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label for="ip-lookup-url" class="block font-medium text-slate-400 mb-1" data-lang="ipUrlLabel">IP Lookup Service URL</label>
-                                <input type="url" id="ip-lookup-url" value="https://api.ipify.org?format=json" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
+                        <div id="manual-probe-result" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+                            Ready to probe port
                         </div>
                     </div>
                 </div>
             </section>
+
         </div>
 
         <!-- ============================================================== -->
         <!-- TAB 3: RUNNER & CONSOLE                                        -->
         <!-- ============================================================== -->
         <div id="tab-runner" class="tab-pane hidden space-y-6">
-            <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="runnerTabTitle">
-                        Local Binary Runner & Quick Scripts
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1" data-lang="runnerTabDesc">
-                        Configure your sing-box binary path, generate one-click execution scripts, and view live instructions.
-                    </p>
-                </div>
-
-                <!-- Binary & Config Paths -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-                    <div>
-                        <label for="runner-binary-path" class="block font-medium text-slate-300 mb-1.5" data-lang="binaryPathLabel">sing-box Binary Path / Command</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="runner-binary-path" value=".\sing-box.exe" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button type="button" id="runner-browse-bin-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
-                                📁 Browse...
-                            </button>
-                            <input type="file" id="runner-bin-file-input" class="hidden" accept=".exe,application/x-executable,*">
-                        </div>
-                        <div class="flex gap-2 mt-2">
-                            <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path=".\sing-box.exe">Windows (.\sing-box.exe)</button>
-                            <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path="sing-box">Linux/macOS (sing-box)</button>
-                        </div>
+            
+            <!-- 1. Desktop Engine Live Controller (Open by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card" id="card-desktop-engine">
+                <div class="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-3 accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2" data-lang="desktopControlsTitle">
+                            <span>Desktop Engine Controller</span>
+                        </h3>
+                        <span id="desktop-engine-status" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-slate-950 border border-slate-800 text-slate-400" data-lang="desktopEngineStopped">
+                            ○ Stopped
+                        </span>
                     </div>
-
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="runner-config-path" class="block font-medium text-slate-300" data-lang="configPathLabel">Config File Path</label>
-                            <button type="button" id="use-current-config-btn" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-medium" data-lang="useCurrentConfigBtn">
-                                ⚡ Use Currently Generated Config
-                            </button>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="text" id="runner-config-path" value="config.json" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button type="button" id="runner-browse-cfg-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
-                                📁 Browse...
-                            </button>
-                            <input type="file" id="runner-cfg-file-input" class="hidden" accept=".json,application/json">
-                        </div>
+                    <div class="flex flex-wrap items-center gap-2" onclick="event.stopPropagation()">
+                        <button id="desktop-start-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5" data-lang="desktopStartEngine">
+                            🟢 Start Sing-Box
+                        </button>
+                        <button id="desktop-stop-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg shadow-md shadow-red-600/20 transition-all flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled data-lang="desktopStopEngine">
+                            🔴 Stop
+                        </button>
+                        <button id="desktop-restart-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition-all flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled data-lang="desktopRestartEngine">
+                            🔄 Restart
+                        </button>
                     </div>
                 </div>
 
-                <!-- Desktop Engine Live Controller (Visible when running as Desktop App or Local) -->
-                <div id="desktop-runner-controller" class="p-5 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-4 shadow-lg">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2" data-lang="desktopControlsTitle">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span>Desktop Engine Controller</span>
-                            </h3>
-                            <span id="desktop-engine-status" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-slate-950 border border-slate-800 text-slate-400" data-lang="desktopEngineStopped">
-                                ○ Stopped
-                            </span>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button id="desktop-start-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5" data-lang="desktopStartEngine">
-                                🟢 Start Sing-Box
-                            </button>
-                            <button id="desktop-stop-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg shadow-md shadow-red-600/20 transition-all flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled data-lang="desktopStopEngine">
-                                🔴 Stop Sing-Box
-                            </button>
-                            <button id="desktop-restart-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-all" data-lang="desktopRestartEngine">
-                                🔄 Restart
-                            </button>
-                        </div>
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono text-slate-400" data-lang="desktopLiveLogsTitle">Engine Output / Live Log Stream</span>
+                        <button id="clear-desktop-logs-btn" class="text-[11px] text-slate-500 hover:text-slate-300 font-mono transition-colors" data-lang="clearLogsBtn">Clear Logs</button>
                     </div>
+                    <div id="desktop-logs-container" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 font-mono text-xs text-slate-300 h-60 overflow-y-auto custom-scrollbar leading-relaxed">
+                        <div class="text-slate-600 select-none">[SYSTEM] Sing-Box engine console initialized. Click 'Start Sing-Box' to launch background instance.</div>
+                    </div>
+                </div>
+            </section>
 
-                    <!-- Live Log Console Box -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span class="font-mono text-[11px]" data-lang="desktopLiveLogs">Live Console Stream</span>
-                            <div class="flex items-center gap-2">
-                                <button id="clear-console-logs-btn" class="text-[11px] hover:text-slate-200 transition-colors">Clear</button>
+            <!-- 2. Local Binary & Config Paths (Collapsed by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed" id="card-runner-paths">
+                <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="runnerTabTitle">
+                            Local Binary Runner & Paths
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5" data-lang="runnerTabDesc">
+                            Configure your sing-box binary path, select configuration files, and customize runtime flags.
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-5 text-xs accordion-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label for="runner-binary-path" class="block font-medium text-slate-300 mb-1.5" data-lang="binaryPathLabel">sing-box Binary Path / Command</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="runner-binary-path" value=".\sing-box.exe" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <button type="button" id="runner-browse-bin-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
+                                    📁 Browse...
+                                </button>
+                                <input type="file" id="runner-bin-file-input" class="hidden" accept=".exe,application/x-executable,*">
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path=".\sing-box.exe">Windows (.\sing-box.exe)</button>
+                                <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path="sing-box">Linux/macOS (sing-box)</button>
                             </div>
                         </div>
-                        <div id="desktop-log-console" class="h-48 overflow-y-auto font-mono text-[11px] leading-relaxed p-3 bg-slate-950 text-slate-300 rounded-xl border border-slate-800 custom-scrollbar whitespace-pre-wrap select-text">
-[SYSTEM] Ready to launch sing-box local gateway engine. Click "Start Sing-Box" to begin routing traffic.
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label for="runner-config-path" class="block font-medium text-slate-300" data-lang="configPathLabel">Config File Path</label>
+                                <button type="button" id="use-current-config-btn" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-medium" data-lang="useCurrentConfigBtn">
+                                    ⚡ Use Currently Generated Config
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="runner-config-path" value="config.json" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <button type="button" id="runner-browse-cfg-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
+                                    📁 Browse...
+                                </button>
+                                <input type="file" id="runner-cfg-file-input" class="hidden" accept=".json,application/json">
+                            </div>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Command & Script Downloads -->
-                <div class="p-5 bg-slate-900/90 rounded-xl border border-slate-800 space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider" data-lang="consoleTitle">Interactive Command & Runner Console</h3>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button id="runner-copy-cmd-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs rounded-lg border border-slate-700 transition-colors" data-lang="copyCommandBtn">Copy Command</button>
-                            <button id="download-bat-btn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow transition-colors" data-lang="downloadBatBtn">📥 Download run.bat (Windows)</button>
-                            <button id="download-sh-btn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow transition-colors" data-lang="downloadShBtn">📥 Download run.sh (Linux/macOS)</button>
-                        </div>
+            <!-- 3. Interactive Command & Script Downloads (Legacy Tool - Collapsed by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card collapsed legacy-tool-card hidden" id="card-runner-scripts">
+                <div class="p-5 sm:p-6 flex items-center justify-between accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">📜</span>
+                        <h3 class="font-bold text-slate-200 text-sm sm:text-base">Interactive Command & Script Downloads</h3>
                     </div>
+                    <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
 
-                    <div class="font-mono text-xs text-emerald-400 bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto shadow-inner">
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <div class="space-y-2">
                         <code id="full-runner-cmd">.\sing-box.exe run -c config.json</code>
                     </div>
 

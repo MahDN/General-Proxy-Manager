@@ -226,9 +226,10 @@ export function parseInput(text) {
 /**
  * Normalizes usable raw outbounds into managed node items with deterministic identifiers.
  */
-export function normalizeNodes(rawOutbounds, startingPort = 10808, listenAddress = '127.0.0.1') {
+export function normalizeNodes(rawOutbounds, startingPort = 20801, listenAddress = '127.0.0.1') {
   if (!Array.isArray(rawOutbounds)) return [];
 
+  let enabledCount = 0;
   return rawOutbounds.map((rawNode, idx) => {
     const num = idx + 1;
     const padded = padIndex(num);
@@ -243,6 +244,9 @@ export function normalizeNodes(rawOutbounds, startingPort = 10808, listenAddress
       warning = 'Transport xhttp was converted to http for sing-box 1.13.18 compatibility';
     }
 
+    const assignedPort = startingPort + enabledCount;
+    enabledCount++;
+
     return {
       id: `node-${padded}`,
       index: num,
@@ -252,13 +256,30 @@ export function normalizeNodes(rawOutbounds, startingPort = 10808, listenAddress
       outboundTag: `proxy-out-${padded}`,
       inboundTag: `proxy-in-${padded}`,
       dnsTag: `dns-proxy-${padded}`,
-      port: startingPort + idx,
+      port: assignedPort,
       listenAddress: listenAddress || '127.0.0.1',
       enabled: true,
       warning,
       rawOutbound: clonedOutbound
     };
   });
+}
+
+/**
+ * Resequences port numbers for enabled nodes without any gaps.
+ */
+export function resequencePorts(nodes, startingPort = 20801) {
+  if (!Array.isArray(nodes)) return [];
+  let currentPort = startingPort;
+  for (const node of nodes) {
+    if (node.enabled) {
+      node.port = currentPort;
+      currentPort++;
+    } else {
+      node.port = null;
+    }
+  }
+  return nodes;
 }
 
 /**
