@@ -449,6 +449,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const selectAllTab1 = document.getElementById('select-all-nodes-tab1');
+    if (selectAllTab1) {
+      const allChecked = normalizedNodes.length > 0 && normalizedNodes.every(n => n.enabled);
+      const someChecked = normalizedNodes.some(n => n.enabled);
+      selectAllTab1.checked = allChecked;
+      selectAllTab1.indeterminate = !allChecked && someChecked;
+    }
+
     filteredNodes.forEach((node) => {
       const originalIdx = normalizedNodes.findIndex(n => n.id === node.id);
       const row = document.createElement('tr');
@@ -472,6 +480,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       row.innerHTML = `
         <td class="p-3 text-center font-mono text-xs text-slate-500 font-bold">${node.displayIndex}</td>
+        <td class="p-3 text-center">
+          <input type="checkbox" ${node.enabled ? 'checked' : ''} class="node-enabled-checkbox w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Enable / Disable Node">
+        </td>
         <td class="p-3">
           <div class="font-medium text-slate-200 truncate max-w-xs md:max-w-md" title="${node.originalTag}">${node.originalTag}</div>
           <div class="text-[11px] text-slate-500 font-mono truncate">${node.rawOutbound.server || 'unknown'}:${node.rawOutbound.server_port || ''}</div>
@@ -481,9 +492,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold font-mono border ${typeBadgeClass}">
             ${typeUpper}
           </span>
-        </td>
-        <td class="p-3 text-center">
-          <input type="checkbox" ${node.enabled ? 'checked' : ''} class="node-enabled-checkbox w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer">
         </td>
         <td class="p-3">
           <input type="number" min="1" max="65535" value="${node.port}" ${node.enabled ? '' : 'disabled'} class="node-port-input w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -506,6 +514,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       nodesTableBody.appendChild(row);
     });
   };
+
+  // Select All Tab 1
+  const selectAllNodesTab1 = document.getElementById('select-all-nodes-tab1');
+  if (selectAllNodesTab1) {
+    selectAllNodesTab1.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      normalizedNodes.forEach(n => {
+        n.enabled = checked;
+      });
+      renderNodeTable();
+      renderTestTable();
+      if (outputSection && !outputSection.classList.contains('hidden')) {
+        handleGenerate();
+      }
+    });
+  }
 
   // Search input event
   if (nodesSearchInput) {
@@ -570,40 +594,86 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderTestTable();
   };
 
-  // --- Subscription Fetch ---
+  // --- Universal Subscription Fetcher (v2rayN / Sing-Box / Clash standard) ---
   const fetchSubscription = async (url) => {
     if (!url || !url.startsWith('http')) {
       alert('Please enter a valid HTTP/HTTPS subscription URL.');
       return;
     }
 
-    const useProxy = useCorsProxyCheckbox && useCorsProxyCheckbox.checked;
-    const fetchUrl = useProxy
-      ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-      : url;
-
     setLoading(true, langData?.loadingSubscription || 'Fetching subscription...');
-    try {
-      const response = await fetch(fetchUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json, text/plain, */*'
-        }
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const text = await response.text();
-      if (nodesInput) nodesInput.value = text;
-      handleRawText(text);
-    } catch (error) {
-      console.error('Subscription fetch error:', error);
-      if (!useProxy) {
-        alert((langData?.errorSubscriptionFetch || 'Error: Direct subscription fetch failed. The remote server may block CORS.') + '\n\n' + (langData?.useCorsProxyLabel || 'You can enable "Use third-party CORS proxy fallback" checkbox to bypass CORS restrictions.'));
-      } else {
-        alert(langData?.errorSubscriptionFetch || 'Error: Failed to fetch subscription via CORS proxy. Please check the URL.');
+    let text = '';
+    let success = false;
+
+    // 1. In Tauri Desktop App: Call native Rust fetch (bypasses CORS & uses v2rayN User-Agent)
+    if (isTauriEnv()) {
+      try {
+        text = await tauriInvoke('fetch_subscription', {
+          url,
+          userAgent: 'v2rayN/6.23 (Windows NT 10.0; Win64; x64)'
+        });
+        if (text && text.trim()) success = true;
+      } catch (err) {
+        console.warn('Tauri native fetch error, trying browser fetch fallback:', err);
       }
-    } finally {
-      setLoading(false);
     }
+
+    // 2. In Browser: Try direct fetch first
+    if (!success) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json, text/plain, */*' }
+        });
+        if (response.ok) {
+          text = await response.text();
+          if (text && text.trim()) success = true;
+        }
+      } catch (directErr) {
+        console.warn('Direct fetch failed due to CORS, attempting CORS proxies...', directErr);
+      }
+    }
+
+    // 3. Fallback to CORS proxies
+    if (!success) {
+      const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`
+      ];
+      for (const pUrl of proxies) {
+        try {
+          const pResp = await fetch(pUrl);
+          if (pResp.ok) {
+            text = await pResp.text();
+            if (text && text.trim()) {
+              success = true;
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    setLoading(false);
+
+    if (!success || !text.trim()) {
+      alert(langData?.errorSubscriptionFetch || 'Failed to fetch subscription. If running in web browser, CORS may be blocking the request. Use the Desktop App or paste links directly.');
+      return;
+    }
+
+    // Decode & normalize content (Base64 URL-safe, UTF-8, JSON, or plain text)
+    let processed = text.trim();
+    try {
+      let cleanB64 = processed.replace(/[\r\n\s]/g, '').replace(/-/g, '+').replace(/_/g, '/');
+      while (cleanB64.length % 4 !== 0) cleanB64 += '=';
+      const decoded = decodeURIComponent(escape(atob(cleanB64)));
+      if (decoded && (decoded.includes('://') || decoded.includes('{') || decoded.includes('proxies:'))) {
+        processed = decoded;
+      }
+    } catch (_) {}
+
+    if (nodesInput) nodesInput.value = processed;
+    handleRawText(processed);
   };
 
   // --- Visual Traffic Flow Diagram Logic ---
@@ -903,6 +973,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (cancelEditNodeBtn) cancelEditNodeBtn.addEventListener('click', closeEditModal);
 
   // --- Connection Test & IP Inspector Tab Logic ---
+  const testSelectedNodeIds = new Set();
+
   const sortTestNodesList = (nodes) => {
     return [...nodes].sort((a, b) => {
       const resA = testResultsMap.get(a.id) || {};
@@ -938,10 +1010,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (normalizedNodes.length === 0) {
       testTableBody.innerHTML = `
         <tr>
-          <td colspan="7" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
+          <td colspan="8" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
         </tr>
       `;
       return;
+    }
+
+    // Default select all if empty
+    if (testSelectedNodeIds.size === 0) {
+      normalizedNodes.forEach(n => testSelectedNodeIds.add(n.id));
+    }
+
+    const selectAllTab2 = document.getElementById('select-all-nodes-tab2');
+    if (selectAllTab2) {
+      const activeCount = normalizedNodes.filter(n => testSelectedNodeIds.has(n.id)).length;
+      selectAllTab2.checked = activeCount === normalizedNodes.length && normalizedNodes.length > 0;
+      selectAllTab2.indeterminate = activeCount > 0 && activeCount < normalizedNodes.length;
     }
 
     let filtered = normalizedNodes;
@@ -963,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (filtered.length === 0) {
       testTableBody.innerHTML = `
         <tr>
-          <td colspan="7" class="p-6 text-center text-slate-500 font-sans text-xs">No matching test nodes found for "${tab2SearchQuery}".</td>
+          <td colspan="8" class="p-6 text-center text-slate-500 font-sans text-xs">No matching test nodes found for "${tab2SearchQuery}".</td>
         </tr>
       `;
       return;
@@ -972,9 +1056,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     filtered.forEach((node) => {
       const originalIdx = normalizedNodes.findIndex(n => n.id === node.id);
       const res = testResultsMap.get(node.id);
+      const isSelected = testSelectedNodeIds.has(node.id);
 
       const row = document.createElement('tr');
-      row.className = 'hover:bg-slate-800/40 transition-colors';
+      row.className = isSelected ? 'hover:bg-slate-800/40 transition-colors' : 'opacity-50 hover:bg-slate-800/20 transition-colors';
       row.id = `test-row-${originalIdx}`;
       row.dataset.index = originalIdx;
       row.dataset.nodeId = node.id;
@@ -996,28 +1081,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             </span>
           `;
           pingHtml = '...';
-          ipHtml = '...';
         } else if (res.status === 'success') {
           statusHtml = `
             <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">
               ✓ ${langData?.statusSuccess || 'Connected'}
             </span>
           `;
-          pingHtml = `<span class="text-emerald-400 font-bold font-mono">${res.ping}</span>`;
-          ipHtml = `<span class="text-slate-200 font-mono">${res.ip}</span>`;
         } else if (res.status === 'failed') {
           statusHtml = `
             <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-red-500/10 text-red-400 border border-red-500/30">
               ✕ ${langData?.statusFailed || 'Timeout'}
             </span>
           `;
-          pingHtml = `<span class="text-red-400">Failed</span>`;
-          ipHtml = `<span class="text-red-400 text-[11px]">${res.ip || 'Connection refused'}</span>`;
+        }
+
+        if (res.ping) {
+          if (res.latencyMs !== undefined && res.latencyMs < 999999) {
+            const colorClass = res.latencyMs < 300 ? 'text-emerald-400 font-bold' : res.latencyMs < 800 ? 'text-amber-400 font-semibold' : 'text-orange-400';
+            pingHtml = `<span class="${colorClass} font-mono">${res.ping}</span>`;
+          } else {
+            pingHtml = `<span class="text-red-400">${res.ping}</span>`;
+          }
+        }
+
+        if (res.ip) {
+          ipHtml = `<span class="text-slate-200 font-mono">${res.ip}</span>`;
         }
       }
 
       row.innerHTML = `
         <td class="p-3 text-center text-slate-500 font-bold">${node.displayIndex}</td>
+        <td class="p-3 text-center">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} class="test-node-select-checkbox w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select for batch tests">
+        </td>
         <td class="p-3 font-sans">
           <div class="font-medium text-slate-200 truncate max-w-xs">${node.originalTag}</div>
           <div class="text-[11px] text-slate-500 font-mono">${node.rawOutbound.server || ''}:${node.rawOutbound.server_port || ''}</div>
@@ -1027,14 +1123,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="p-3 test-ping-cell text-slate-400">${pingHtml}</td>
         <td class="p-3 test-ip-cell text-slate-400 font-mono text-xs truncate max-w-xs">${ipHtml}</td>
         <td class="p-3 text-center">
-          <button type="button" class="single-test-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all" data-index="${originalIdx}">
-            ${langData?.testSingleBtn || 'Test'}
-          </button>
+          <div class="flex items-center justify-center gap-1.5">
+            <button type="button" class="single-ping-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all flex items-center gap-1" data-index="${originalIdx}">
+              ${langData?.testSingleBtn || '⚡ Ping'}
+            </button>
+            <button type="button" class="single-ip-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-all flex items-center gap-1" data-index="${originalIdx}">
+              ${langData?.fetchSingleIpBtn || '🌐 IP'}
+            </button>
+          </div>
         </td>
       `;
       testTableBody.appendChild(row);
     });
   };
+
+  // Select All Tab 2
+  const selectAllNodesTab2 = document.getElementById('select-all-nodes-tab2');
+  if (selectAllNodesTab2) {
+    selectAllNodesTab2.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      if (checked) {
+        normalizedNodes.forEach(n => testSelectedNodeIds.add(n.id));
+      } else {
+        testSelectedNodeIds.clear();
+      }
+      renderTestTable();
+    });
+  }
 
   if (testSearchInput) {
     testSearchInput.addEventListener('input', (e) => {
@@ -1064,58 +1179,165 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindTab2Sort('sort-test-ping', 'ping');
   bindTab2Sort('sort-test-ip', 'ip');
 
-  const testSingleNode = async (index) => {
+  // --- Real-Delay Ping Tester ---
+  const testSingleRealPing = async (index) => {
     const node = normalizedNodes[index];
     if (!node) return;
 
-    testResultsMap.set(node.id, { status: 'testing', ping: '...', ip: '...', latencyMs: 999999 });
+    const prevRes = testResultsMap.get(node.id) || {};
+    testResultsMap.set(node.id, { ...prevRes, status: 'testing', ping: '...' });
     renderTestTable();
 
     const pingUrl = (pingTestUrlInput && pingTestUrlInput.value.trim()) || DEFAULT_PING_URL;
     const ipUrl = (ipLookupUrlInput && ipLookupUrlInput.value.trim()) || DEFAULT_IP_URL;
 
-    const startTime = performance.now();
-    try {
-      await fetch(pingUrl, {
-        method: 'GET',
-        mode: 'no-cors',
-        cache: 'no-store'
-      });
-      const latencyMs = Math.round(performance.now() - startTime);
+    if (isTauriEnv()) {
+      try {
+        const probeRes = await tauriInvoke('probe_single_proxy', {
+          port: node.port,
+          listenIp: node.listenAddress || '127.0.0.1',
+          pingUrl,
+          ipUrl
+        });
+        if (probeRes.success) {
+          testResultsMap.set(node.id, {
+            status: 'success',
+            ping: `${probeRes.latency_ms} ms`,
+            ip: probeRes.egress_ip || prevRes.ip || '-',
+            latencyMs: probeRes.latency_ms
+          });
+        } else {
+          testResultsMap.set(node.id, {
+            ...prevRes,
+            status: 'failed',
+            ping: 'Failed',
+            latencyMs: 999999
+          });
+        }
+      } catch (err) {
+        testResultsMap.set(node.id, {
+          ...prevRes,
+          status: 'failed',
+          ping: 'Failed',
+          latencyMs: 999999
+        });
+      }
+    } else {
+      const startTime = performance.now();
+      try {
+        await fetch(pingUrl, {
+          method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-store'
+        });
+        const latencyMs = Math.round(performance.now() - startTime);
+        testResultsMap.set(node.id, {
+          ...prevRes,
+          status: 'success',
+          ping: `${latencyMs} ms`,
+          latencyMs
+        });
+      } catch (err) {
+        testResultsMap.set(node.id, {
+          ...prevRes,
+          status: 'failed',
+          ping: 'Failed',
+          latencyMs: 999999
+        });
+      }
+    }
+    renderTestTable();
+  };
 
-      let ipText = node.rawOutbound.server || 'Direct/Connected';
+  // --- Egress IP Fetcher ---
+  const fetchSingleNodeIp = async (index) => {
+    const node = normalizedNodes[index];
+    if (!node) return;
+
+    const prevRes = testResultsMap.get(node.id) || {};
+    testResultsMap.set(node.id, { ...prevRes, ip: '...' });
+    renderTestTable();
+
+    const pingUrl = (pingTestUrlInput && pingTestUrlInput.value.trim()) || DEFAULT_PING_URL;
+    const ipUrl = (ipLookupUrlInput && ipLookupUrlInput.value.trim()) || DEFAULT_IP_URL;
+
+    if (isTauriEnv()) {
+      try {
+        const probeRes = await tauriInvoke('probe_single_proxy', {
+          port: node.port,
+          listenIp: node.listenAddress || '127.0.0.1',
+          pingUrl,
+          ipUrl
+        });
+        if (probeRes.success && probeRes.egress_ip) {
+          testResultsMap.set(node.id, {
+            ...prevRes,
+            status: 'success',
+            ip: probeRes.egress_ip
+          });
+        } else {
+          testResultsMap.set(node.id, {
+            ...prevRes,
+            ip: probeRes.error || 'Failed'
+          });
+        }
+      } catch (err) {
+        testResultsMap.set(node.id, { ...prevRes, ip: 'Error' });
+      }
+    } else {
       try {
         const ipResp = await fetch(ipUrl, { cache: 'no-store' });
         if (ipResp.ok) {
           const ipData = await ipResp.json();
-          ipText = ipData.ip || ipData.query || JSON.stringify(ipData);
+          testResultsMap.set(node.id, {
+            ...prevRes,
+            status: 'success',
+            ip: ipData.ip || ipData.query || JSON.stringify(ipData)
+          });
         }
-      } catch (_) {}
-
-      testResultsMap.set(node.id, {
-        status: 'success',
-        ping: `${latencyMs} ms`,
-        ip: ipText,
-        latencyMs
-      });
-    } catch (err) {
-      testResultsMap.set(node.id, {
-        status: 'failed',
-        ping: 'Failed',
-        ip: err.message || 'Connection refused',
-        latencyMs: 999999
-      });
-    } finally {
-      renderTestTable();
+      } catch (_) {
+        testResultsMap.set(node.id, { ...prevRes, ip: 'Direct/Blocked' });
+      }
     }
+    renderTestTable();
   };
 
+  // Batch Ping All Selected
+  const testAllPingBtn = document.getElementById('test-all-ping-btn');
+  if (testAllPingBtn) {
+    testAllPingBtn.addEventListener('click', async () => {
+      testAllPingBtn.disabled = true;
+      for (let i = 0; i < normalizedNodes.length; i++) {
+        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
+          await testSingleRealPing(i);
+        }
+      }
+      testAllPingBtn.disabled = false;
+    });
+  }
+
+  // Batch Fetch IP All Selected
+  const fetchAllIpBtn = document.getElementById('fetch-all-ip-btn');
+  if (fetchAllIpBtn) {
+    fetchAllIpBtn.addEventListener('click', async () => {
+      fetchAllIpBtn.disabled = true;
+      for (let i = 0; i < normalizedNodes.length; i++) {
+        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
+          await fetchSingleNodeIp(i);
+        }
+      }
+      fetchAllIpBtn.disabled = false;
+    });
+  }
+
+  // Batch Test All (Ping + IP)
   if (testAllBtn) {
     testAllBtn.addEventListener('click', async () => {
       testAllBtn.disabled = true;
       for (let i = 0; i < normalizedNodes.length; i++) {
-        if (normalizedNodes[i].enabled) {
-          await testSingleNode(i);
+        if (testSelectedNodeIds.has(normalizedNodes[i].id)) {
+          await testSingleRealPing(i);
+          await fetchSingleNodeIp(i);
         }
       }
       testAllBtn.disabled = false;
@@ -1124,10 +1346,75 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (testTableBody) {
     testTableBody.addEventListener('click', (e) => {
-      if (e.target.classList.contains('single-test-btn')) {
-        const idx = parseInt(e.target.dataset.index, 10);
-        testSingleNode(idx);
+      const pingBtn = e.target.closest('.single-ping-btn');
+      if (pingBtn) {
+        const idx = parseInt(pingBtn.dataset.index, 10);
+        testSingleRealPing(idx);
+        return;
       }
+
+      const ipBtn = e.target.closest('.single-ip-btn');
+      if (ipBtn) {
+        const idx = parseInt(ipBtn.dataset.index, 10);
+        fetchSingleNodeIp(idx);
+        return;
+      }
+    });
+
+    testTableBody.addEventListener('change', (e) => {
+      if (e.target.classList.contains('test-node-select-checkbox')) {
+        const row = e.target.closest('tr');
+        if (!row) return;
+        const nodeId = row.dataset.nodeId;
+        if (e.target.checked) {
+          testSelectedNodeIds.add(nodeId);
+        } else {
+          testSelectedNodeIds.delete(nodeId);
+        }
+        renderTestTable();
+      }
+    });
+  }
+
+  // --- Tab 3 File Pickers & Use Current Config Logic ---
+  const runnerBrowseBinBtn = document.getElementById('runner-browse-bin-btn');
+  const runnerBinFileInput = document.getElementById('runner-bin-file-input');
+  if (runnerBrowseBinBtn && runnerBinFileInput) {
+    runnerBrowseBinBtn.addEventListener('click', () => runnerBinFileInput.click());
+    runnerBinFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && runnerBinaryPathInput) {
+        runnerBinaryPathInput.value = file.name;
+        updateRunnerCommand();
+      }
+    });
+  }
+
+  const runnerBrowseCfgBtn = document.getElementById('runner-browse-cfg-btn');
+  const runnerCfgFileInput = document.getElementById('runner-cfg-file-input');
+  if (runnerBrowseCfgBtn && runnerCfgFileInput) {
+    runnerBrowseCfgBtn.addEventListener('click', () => runnerCfgFileInput.click());
+    runnerCfgFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && runnerConfigPathInput) {
+        runnerConfigPathInput.value = file.name;
+        updateRunnerCommand();
+      }
+    });
+  }
+
+  const useCurrentConfigBtn = document.getElementById('use-current-config-btn');
+  if (useCurrentConfigBtn) {
+    useCurrentConfigBtn.addEventListener('click', () => {
+      if (!currentGeneratedConfig) {
+        handleGenerate();
+      }
+      const activeName = getConfigFilename();
+      if (runnerConfigPathInput) {
+        runnerConfigPathInput.value = activeName;
+        updateRunnerCommand();
+      }
+      appendConsoleLog(`[SYSTEM] Config set to currently generated: ${activeName}`);
     });
   }
 

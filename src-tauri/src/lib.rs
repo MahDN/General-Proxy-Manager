@@ -63,6 +63,11 @@ async fn toggle_system_proxy(enable: bool, host: String, port: u16) -> Result<()
     }
 }
 
+#[tauri::command]
+async fn fetch_subscription(url: String, user_agent: Option<String>) -> Result<String, String> {
+    latency_probe::fetch_remote_subscription(url, user_agent).await
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(ProcessState::new())
@@ -72,7 +77,8 @@ pub fn run() {
             get_singbox_status,
             probe_single_proxy,
             probe_all_proxies,
-            toggle_system_proxy
+            toggle_system_proxy,
+            fetch_subscription
         ])
         .run(tauri::generate_context!())
         .expect("error while running General Proxy Manager tauri application");

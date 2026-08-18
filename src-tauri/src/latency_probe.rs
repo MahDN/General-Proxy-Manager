@@ -118,3 +118,20 @@ pub async fn probe_batch_ports(
     }
     results
 }
+
+pub async fn fetch_remote_subscription(url: String, user_agent: Option<String>) -> Result<String, String> {
+    let ua = user_agent.unwrap_or_else(|| "v2rayN/6.23 (Windows NT 10.0; Win64; x64)".to_string());
+    let client = reqwest::Client::builder()
+        .user_agent(ua)
+        .timeout(Duration::from_secs(15))
+        .danger_accept_invalid_certs(true)
+        .build()
+        .map_err(|e| format!("Failed to build client: {}", e))?;
+
+    let resp = client.get(&url).send().await.map_err(|e| format!("HTTP request error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("Subscription server returned HTTP {}", resp.status()));
+    }
+    let text = resp.text().await.map_err(|e| format!("Failed to read body: {}", e))?;
+    Ok(text)
+}

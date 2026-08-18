@@ -425,13 +425,17 @@
                                         <th id="sort-nodes-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
                                             <span data-lang="tableHeaderIndex">#</span> <span class="sort-icon text-[10px]">↕</span>
                                         </th>
+                                        <th class="p-3 text-center w-14 select-none">
+                                            <div class="flex items-center justify-center">
+                                                <input type="checkbox" id="select-all-nodes-tab1" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
+                                            </div>
+                                        </th>
                                         <th id="sort-nodes-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
                                             <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
                                         </th>
                                         <th id="sort-nodes-type" class="p-3 w-24 cursor-pointer hover:text-white transition-colors" title="Sort by Type">
                                             <span data-lang="tableHeaderType">Type</span> <span class="sort-icon text-[10px]">↕</span>
                                         </th>
-                                        <th class="p-3 text-center w-16" data-lang="tableHeaderEnabled">Active</th>
                                         <th id="sort-nodes-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
                                             <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
                                         </th>
@@ -665,7 +669,8 @@
         <!-- ============================================================== -->
         <div id="tab-testing" class="tab-pane hidden space-y-6">
             <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <!-- Top Action Header -->
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
                         <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2" data-lang="testTabTitle">
                             Proxy Node Health & IP Inspector
@@ -674,102 +679,24 @@
                             Test individual or all local endpoints when sing-box is running locally on this machine.
                         </p>
                     </div>
-                    <button id="test-all-btn" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition-all whitespace-nowrap flex items-center gap-2" data-lang="testAllBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                        <span>⚡ Test All Nodes</span>
-                    </button>
-                </div>
-
-                <!-- Real-Delay Testing Info & Action Bar -->
-                <div class="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
-                    <div class="flex items-start gap-2.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <p class="text-slate-300 leading-relaxed" data-lang="realDelayNotice">
-                            Real-delay testing measures true round-trip time through each node via sing-box local mixed proxy ports. Download the script below to test all active ports using curl.
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button id="download-real-delay-bat-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayBatBtn">
-                            📥 Download Real-Delay (.bat)
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button id="test-all-ping-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllPingBtn">
+                            ⚡ Real Delay Ping (All)
                         </button>
-                        <button id="download-real-delay-sh-btn" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayShBtn">
-                            📥 Download (.sh)
+                        <button id="fetch-all-ip-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md shadow-blue-600/20 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="fetchAllIpBtn">
+                            🌐 Fetch Egress IPs (All)
                         </button>
-                    </div>
-                </div>
-
-                <!-- Manual Single Port Probe Card -->
-                <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-md">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                            <h3 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2" data-lang="manualTestTitle">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                                <span>Manual Single Port Real-Delay Probe</span>
-                            </h3>
-                            <p class="text-[11px] text-slate-400 mt-0.5" data-lang="manualTestDesc">
-                                Test real proxy latency on a specific local port after starting sing-box, with one-click cURL generator.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                        <div>
-                            <label for="manual-probe-port" class="block font-medium text-slate-400 mb-1" data-lang="manualPortLabel">Target Port</label>
-                            <input type="number" id="manual-probe-port" value="20808" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="manual-probe-ip" class="block font-medium text-slate-400 mb-1" data-lang="manualIpLabel">Local IP</label>
-                            <input type="text" id="manual-probe-ip" value="127.0.0.1" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label for="manual-probe-target" class="block font-medium text-slate-400 mb-1">Target Endpoint</label>
-                            <input type="url" id="manual-probe-target" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                        <div class="flex items-center gap-2">
-                            <button id="manual-probe-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5" data-lang="manualTestBtn">
-                                ⚡ Probe Port
-                            </button>
-                            <button id="manual-copy-curl-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5" data-lang="copyCurlCmdBtn">
-                                📋 Copy cURL Command
-                            </button>
-                        </div>
-                        <div id="manual-probe-result" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
-                            Ready to probe port
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Endpoint Settings Box -->
-                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2" data-lang="testSettingsTitle">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                            <span>Endpoint Settings</span>
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <button id="save-endpoints-btn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors" data-lang="saveEndpointsBtn">Save Endpoints</button>
-                            <button id="reset-endpoints-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 transition-colors" data-lang="resetEndpointsBtn">Reset to Defaults</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <label for="ping-test-url" class="block font-medium text-slate-400 mb-1" data-lang="pingUrlLabel">Ping Latency Test URL</label>
-                            <input type="url" id="ping-test-url" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="ip-lookup-url" class="block font-medium text-slate-400 mb-1" data-lang="ipUrlLabel">IP Lookup Service URL</label>
-                            <input type="url" id="ip-lookup-url" value="https://api.ipify.org?format=json" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
+                        <button id="test-all-btn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition-all whitespace-nowrap flex items-center gap-1.5" data-lang="testAllBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            <span>Test All</span>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Test Search Bar -->
                 <div class="relative">
-                    <input type="text" id="test-search-input" placeholder="Search test nodes by name, port, IP..." class="w-full text-xs py-2 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
-                    <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="test-search-input" placeholder="Search test nodes by name, port, IP..." class="w-full text-xs py-2.5 px-3 pl-8 bg-slate-900/90 text-slate-200 border border-slate-700/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500" data-lang-placeholder="searchPlaceholder">
+                    <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
 
                 <!-- Test Results Table -->
@@ -780,28 +707,122 @@
                                 <th id="sort-test-index" class="p-3 text-center w-12 cursor-pointer hover:text-white transition-colors" title="Sort by Index">
                                     <span>#</span> <span class="sort-icon text-[10px]">↕</span>
                                 </th>
+                                <th class="p-3 text-center w-12 select-none">
+                                    <div class="flex items-center justify-center">
+                                        <input type="checkbox" id="select-all-nodes-tab2" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer" title="Select / Deselect All">
+                                    </div>
+                                </th>
                                 <th id="sort-test-name" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by Name">
                                     <span data-lang="tableHeaderName">Node Name</span> <span class="sort-icon text-[10px]">↕</span>
                                 </th>
                                 <th id="sort-test-port" class="p-3 w-28 cursor-pointer hover:text-white transition-colors" title="Sort by Port">
                                     <span data-lang="tableHeaderPort">Local Port</span> <span class="sort-icon text-[10px]">↕</span>
                                 </th>
-                                <th class="p-3 w-36" data-lang="colStatus">Status</th>
-                                <th id="sort-test-ping" class="p-3 w-32 cursor-pointer hover:text-white transition-colors" title="Sort by Latency">
-                                    <span data-lang="colPing">Latency (Ping)</span> <span class="sort-icon text-[10px]">↕</span>
+                                <th class="p-3 w-32" data-lang="colStatus">Status</th>
+                                <th id="sort-test-ping" class="p-3 w-36 cursor-pointer hover:text-white transition-colors" title="Sort by Latency">
+                                    <span data-lang="colPing">Latency (Real Ping)</span> <span class="sort-icon text-[10px]">↕</span>
                                 </th>
                                 <th id="sort-test-ip" class="p-3 cursor-pointer hover:text-white transition-colors" title="Sort by IP">
                                     <span data-lang="colIp">Detected Egress IP</span> <span class="sort-icon text-[10px]">↕</span>
                                 </th>
-                                <th class="p-3 text-center w-24" data-lang="tableHeaderActions">Action</th>
+                                <th class="p-3 text-center w-36" data-lang="tableHeaderActions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="test-table-body" class="divide-y divide-slate-800/60 bg-slate-950/40 font-mono text-xs">
                             <tr>
-                                <td colspan="7" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
+                                <td colspan="8" class="p-8 text-center text-slate-500 font-sans text-xs">Please import nodes in the Config Generator tab first.</td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Bottom Section: Endpoint Settings, Real-Delay Download Box & Manual Probe Card -->
+                <div class="space-y-4 pt-4 border-t border-slate-800/80">
+                    <!-- Real-Delay Testing Info & Script Action Bar -->
+                    <div class="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
+                        <div class="flex items-start gap-2.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <p class="text-slate-300 leading-relaxed" data-lang="realDelayNotice">
+                                Real-delay testing measures true round-trip time through each node via sing-box local mixed proxy ports. Download the script below to test all active ports using curl.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button id="download-real-delay-bat-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayBatBtn">
+                                📥 Download Real-Delay (.bat)
+                            </button>
+                            <button id="download-real-delay-sh-btn" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap text-xs" data-lang="downloadRealDelayShBtn">
+                                📥 Download (.sh)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Single Port Probe Card -->
+                    <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-md">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                                <h3 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2" data-lang="manualTestTitle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                    <span>Manual Single Port Real-Delay Probe</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5" data-lang="manualTestDesc">
+                                    Test real proxy latency on a specific local port after starting sing-box, with one-click cURL generator.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                            <div>
+                                <label for="manual-probe-port" class="block font-medium text-slate-400 mb-1" data-lang="manualPortLabel">Target Port</label>
+                                <input type="number" id="manual-probe-port" value="20808" min="1" max="65535" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="manual-probe-ip" class="block font-medium text-slate-400 mb-1" data-lang="manualIpLabel">Local IP</label>
+                                <input type="text" id="manual-probe-ip" value="127.0.0.1" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="manual-probe-target" class="block font-medium text-slate-400 mb-1">Target Endpoint</label>
+                                <input type="url" id="manual-probe-target" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700/80 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                            <div class="flex items-center gap-2">
+                                <button id="manual-probe-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5" data-lang="manualTestBtn">
+                                    ⚡ Probe Port
+                                </button>
+                                <button id="manual-copy-curl-btn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5" data-lang="copyCurlCmdBtn">
+                                    📋 Copy cURL Command
+                                </button>
+                            </div>
+                            <div id="manual-probe-result" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400">
+                                Ready to probe port
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endpoint Settings Box -->
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-slate-300 text-xs flex items-center gap-2" data-lang="testSettingsTitle">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                <span>Endpoint Settings</span>
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <button id="save-endpoints-btn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors" data-lang="saveEndpointsBtn">Save Endpoints</button>
+                                <button id="reset-endpoints-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold border border-slate-700 transition-colors" data-lang="resetEndpointsBtn">Reset to Defaults</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label for="ping-test-url" class="block font-medium text-slate-400 mb-1" data-lang="pingUrlLabel">Ping Latency Test URL</label>
+                                <input type="url" id="ping-test-url" value="https://cp.cloudflare.com/generate_204" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="ip-lookup-url" class="block font-medium text-slate-400 mb-1" data-lang="ipUrlLabel">IP Lookup Service URL</label>
+                                <input type="url" id="ip-lookup-url" value="https://api.ipify.org?format=json" class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
@@ -824,7 +845,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
                     <div>
                         <label for="runner-binary-path" class="block font-medium text-slate-300 mb-1.5" data-lang="binaryPathLabel">sing-box Binary Path / Command</label>
-                        <input type="text" id="runner-binary-path" value=".\sing-box.exe" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex gap-2">
+                            <input type="text" id="runner-binary-path" value=".\sing-box.exe" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" id="runner-browse-bin-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
+                                📁 Browse...
+                            </button>
+                            <input type="file" id="runner-bin-file-input" class="hidden" accept=".exe,application/x-executable,*">
+                        </div>
                         <div class="flex gap-2 mt-2">
                             <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path=".\sing-box.exe">Windows (.\sing-box.exe)</button>
                             <button type="button" class="preset-bin-btn text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono border border-slate-700 transition-colors" data-path="sing-box">Linux/macOS (sing-box)</button>
@@ -832,8 +859,19 @@
                     </div>
 
                     <div>
-                        <label for="runner-config-path" class="block font-medium text-slate-300 mb-1.5" data-lang="configPathLabel">Config File Path</label>
-                        <input type="text" id="runner-config-path" value="config.json" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="runner-config-path" class="block font-medium text-slate-300" data-lang="configPathLabel">Config File Path</label>
+                            <button type="button" id="use-current-config-btn" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-medium" data-lang="useCurrentConfigBtn">
+                                ⚡ Use Currently Generated Config
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="runner-config-path" value="config.json" class="flex-1 p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" id="runner-browse-cfg-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap" data-lang="selectFileBtn">
+                                📁 Browse...
+                            </button>
+                            <input type="file" id="runner-cfg-file-input" class="hidden" accept=".json,application/json">
+                        </div>
                     </div>
                 </div>
 
