@@ -12,6 +12,7 @@ import {
   validatePorts,
   generateConfig,
   validateGeneratedConfig,
+  resequencePorts,
   isIpv4,
   isIpv6,
   isHostname,
@@ -534,19 +535,146 @@ test('TEST 27: Resequencing ports without gaps when some nodes are disabled', ()
   normalized[1].enabled = false;
   normalized[3].enabled = false;
 
-  // Resequence
-  import('../core-generator.js').then(({ resequencePorts }) => {
-    resequencePorts(normalized, 20801);
-    assert.equal(normalized[0].port, 20801);
-    assert.equal(normalized[1].port, null);
-    assert.equal(normalized[2].port, 20802);
-    assert.equal(normalized[3].port, null);
-    assert.equal(normalized[4].port, 20803);
+  resequencePorts(normalized, 20801);
+  assert.equal(normalized[0].port, 20801);
+  assert.equal(normalized[1].port, null);
+  assert.equal(normalized[2].port, 20802);
+  assert.equal(normalized[3].port, null);
+  assert.equal(normalized[4].port, 20803);
 
-    const config = generateConfig({ normalizedNodes: normalized });
-    assert.equal(config.inbounds.length, 3);
-    assert.equal(config.inbounds[0].listen_port, 20801);
-    assert.equal(config.inbounds[1].listen_port, 20802);
-    assert.equal(config.inbounds[2].listen_port, 20803);
-  });
+  const config = generateConfig({ normalizedNodes: normalized, enableMasterPort: false });
+  assert.equal(config.inbounds.length, 3);
+  assert.equal(config.inbounds[0].listen_port, 20801);
+  assert.equal(config.inbounds[1].listen_port, 20802);
+  assert.equal(config.inbounds[2].listen_port, 20803);
 });
+
+test('TEST 28: Trojan share link parsing', () => {
+  const trojanLink = 'trojan://myPassword123@trojan.example.com:443?security=tls&sni=sni.example.com&type=ws&path=%2Fws#MyTrojanNode';
+  const parsed = parseInput(trojanLink);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].type, 'trojan');
+  assert.equal(parsed[0].server, 'trojan.example.com');
+  assert.equal(parsed[0].server_port, 443);
+  assert.equal(parsed[0].password, 'myPassword123');
+  assert.equal(parsed[0].tls.server_name, 'sni.example.com');
+  assert.equal(parsed[0].transport.type, 'ws');
+  assert.equal(parsed[0].transport.path, '/ws');
+  assert.equal(parsed[0].tag, 'MyTrojanNode');
+});
+
+test('TEST 29: Shadowsocks SIP002 share link parsing', () => {
+  // aes-256-gcm:secret123 -> YWVzLTI1Ni1nY206c2VjcmV0MTIz
+  const ssLink = 'ss://YWVzLTI1Ni1nY206c2VjcmV0MTIz@ss.example.com:8388#MyShadowsocksNode';
+  const parsed = parseInput(ssLink);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].type, 'shadowsocks');
+  assert.equal(parsed[0].server, 'ss.example.com');
+  assert.equal(parsed[0].server_port, 8388);
+  assert.equal(parsed[0].method, 'aes-256-gcm');
+  assert.equal(parsed[0].password, 'secret123');
+  assert.equal(parsed[0].tag, 'MyShadowsocksNode');
+});
+
+test('TEST 30: Hysteria 2 share link parsing (hy2:// & hysteria2://)', () => {
+  const hy2Link = 'hy2://hy2Pass@hy2.example.com:8443?sni=hy2.example.com&insecure=1&obfs=salamander&obfs-password=obfs123#MyHysteria2Node';
+  const parsed = parseInput(hy2Link);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].type, 'hysteria2');
+  assert.equal(parsed[0].server, 'hy2.example.com');
+  assert.equal(parsed[0].server_port, 8443);
+  assert.equal(parsed[0].password, 'hy2Pass');
+  assert.equal(parsed[0].tls.insecure, true);
+  assert.equal(parsed[0].obfs.type, 'salamander');
+  assert.equal(parsed[0].obfs.password, 'obfs123');
+  assert.equal(parsed[0].tag, 'MyHysteria2Node');
+});
+
+test('TEST 31: WireGuard share link parsing', () => {
+  const wgLink = 'wireguard://aGVsbG93b3JsZHByaXZhdGVrZXkxMjM0NTY3ODkwMTI=@wg.example.com:51820?public_key=cHVibGlja2V5MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=&ip=10.0.0.2/32&reserved=1,2,3#MyWireGuardNode';
+  const parsed = parseInput(wgLink);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].type, 'wireguard');
+  assert.equal(parsed[0].server, 'wg.example.com');
+  assert.equal(parsed[0].server_port, 51820);
+  assert.equal(parsed[0].local_address[0], '10.0.0.2/32');
+  assert.deepEqual(parsed[0].reserved, [1, 2, 3]);
+  assert.equal(parsed[0].tag, 'MyWireGuardNode');
+});
+
+test('TEST 32: Mixed multi-protocol subscription (VLESS + Trojan + SS + Hysteria2 + WireGuard)', () => {
+  const mixedLinks = [
+    'vless://550e8400-e29b-41d4-a716-446655440000@vless.example.com:443?security=tls#VlessNode',
+    'trojan://pass1@trojan.example.com:443?security=tls#TrojanNode',
+    'ss://YWVzLTI1Ni1nY206c2VjcmV0MTIz@ss.example.com:8388#SSNode',
+    'hy2://hy2pass@hy2.example.com:443#Hy2Node',
+    'wireguard://cHJpdmF0ZWtleTEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=@wg.example.com:51820?public_key=cHVibGlja2V5MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=#WgNode'
+  ].join('\n');
+
+  const parsed = parseInput(mixedLinks);
+  assert.equal(parsed.length, 5);
+  const types = parsed.map(n => n.type);
+  assert.deepEqual(types, ['vless', 'trojan', 'shadowsocks', 'hysteria2', 'wireguard']);
+});
+
+test('TEST 33: Master Port 20800 and auto-fastest urltest outbound generation', () => {
+  const raw = [sampleVless1, sampleVless2];
+  const normalized = normalizeNodes(raw, 20801);
+  const config = generateConfig({
+    normalizedNodes: normalized,
+    enableMasterPort: true,
+    masterPort: 20800
+  });
+
+  // Master inbound + 2 individual inbounds
+  assert.equal(config.inbounds.length, 3);
+  assert.equal(config.inbounds[0].tag, 'master-in');
+  assert.equal(config.inbounds[0].listen_port, 20800);
+  assert.equal(config.inbounds[1].listen_port, 20801);
+  assert.equal(config.inbounds[2].listen_port, 20802);
+
+  // Auto-fastest urltest outbound
+  const autoFastest = config.outbounds.find(o => o.tag === 'auto-fastest');
+  assert.ok(autoFastest);
+  assert.equal(autoFastest.type, 'urltest');
+  assert.deepEqual(autoFastest.outbounds, ['proxy-out-01', 'proxy-out-02']);
+
+  // Route rule for master-in
+  const masterRoute = config.route.rules.find(r => r.inbound === 'master-in');
+  assert.ok(masterRoute);
+  assert.equal(masterRoute.outbound, 'auto-fastest');
+
+  // Clash API experimental controller
+  assert.ok(config.experimental);
+  assert.ok(config.experimental.clash_api);
+  assert.equal(config.experimental.clash_api.external_controller, '127.0.0.1:9090');
+
+  const check = runSingBoxCheck(config);
+  assert.equal(check.success, true, check.error);
+});
+
+test('TEST 34: Multi-protocol configuration with Master Port passes sing-box 1.13.18 check', () => {
+  const mixedLinks = [
+    'vless://550e8400-e29b-41d4-a716-446655440000@1.1.1.1:443?security=tls#Vless1',
+    'trojan://myPassword123@1.1.1.1:443?security=tls#Trojan1',
+    'ss://YWVzLTI1Ni1nY206c2VjcmV0MTIz@1.1.1.1:8388#SS1',
+    'hy2://hy2Pass@1.1.1.1:8443#Hy2_1',
+    'wireguard://aGVsbG93b3JsZHByaXZhdGVrZXkxMjM0NTY3ODkwMTI=@1.1.1.1:51820?public_key=cHVibGlja2V5MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=&ip=10.0.0.2/32#Wg1'
+  ].join('\n');
+
+  const parsed = parseInput(mixedLinks);
+  const normalized = normalizeNodes(parsed, 20801);
+  const config = generateConfig({
+    normalizedNodes: normalized,
+    enableMasterPort: true,
+    masterPort: 20800
+  });
+
+  const validation = validateGeneratedConfig(config, normalized);
+  assert.equal(validation.valid, true);
+
+  const check = runSingBoxCheck(config);
+  assert.equal(check.success, true, check.error);
+});
+
+

@@ -244,17 +244,29 @@
                         <span data-lang="targetVersionLabel">sing-box 1.13.18</span>
                     </div>
 
+                    <!-- System Proxy Quick Toggle -->
+                    <button id="system-proxy-btn" class="px-2.5 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900 hover:bg-slate-850 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm" title="Toggle Windows System Proxy (127.0.0.1:20800)">
+                        <span id="system-proxy-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span data-lang="systemProxyBtn">System Proxy</span>
+                    </button>
+
                     <!-- Toggle Legacy Script Tools Button -->
                     <button id="toggle-legacy-tools-btn" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border border-slate-700/80 transition-all flex items-center gap-1.5 shadow-sm" title="Toggle Manual Script & Terminal Tools">
                         <span>🛠️</span>
                         <span class="hidden xl:inline" data-lang="toggleToolsBtn">Script Tools</span>
                     </button>
 
+                    <!-- Check for Updates Button -->
+                    <button id="check-updates-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-700/80 transition-all shadow-sm flex items-center justify-center relative" title="Check for Updates" aria-label="Check for Updates">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span id="update-badge-dot" class="w-2 h-2 rounded-full bg-indigo-500 absolute -top-0.5 -right-0.5 hidden"></span>
+                    </button>
+
                     <!-- Theme Switcher (Dark / Light) -->
                     <button id="theme-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-700/80 transition-all shadow-sm flex items-center justify-center" title="Toggle Theme" aria-label="Toggle Theme">
                         <svg id="theme-icon-sun" class="w-4 h-4 text-amber-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="12" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
                             <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
                             <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
@@ -509,6 +521,18 @@
                                 <p class="text-[11px] text-slate-500 mt-1" data-lang="startPortHelp">Sequential ports: 20801, 20802...</p>
                             </div>
 
+                            <!-- Master Port (Auto-Fastest urltest) Option -->
+                            <div class="p-3 bg-slate-950/80 border border-indigo-500/30 rounded-xl space-y-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" id="enable-master-port" checked class="w-4 h-4 text-indigo-600 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500 cursor-pointer">
+                                        <label for="enable-master-port" class="font-bold text-slate-200 text-xs cursor-pointer select-none" data-lang="masterPortEnable">Enable Master Auto-Fastest Port (20800)</label>
+                                    </div>
+                                    <input type="number" id="master-port-input" value="20800" min="1" max="65535" class="w-20 p-1.5 bg-slate-900 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+                                <p class="text-[11px] text-slate-400 pl-6 leading-relaxed" data-lang="masterPortDesc">Single aggregate port that automatically routes to the lowest latency node via periodic urltest.</p>
+                            </div>
+
                             <div>
                                 <label for="custom-filename-input" class="block font-medium text-slate-300 mb-1" data-lang="customFileNameLabel">Output Base Filename</label>
                                 <input type="text" id="custom-filename-input" value="config" placeholder="config" class="w-full p-2.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -747,6 +771,9 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                             <span>Test All</span>
                         </button>
+                        <button id="stop-test-btn" class="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 text-xs transition-all whitespace-nowrap hidden items-center gap-1.5 animate-pulse" data-lang="stopTestBtn">
+                            ⏹️ Stop Test
+                        </button>
                     </div>
                 </div>
 
@@ -909,6 +936,55 @@
         <!-- ============================================================== -->
         <div id="tab-runner" class="tab-pane hidden space-y-6">
             
+            <!-- 0. Real-Time Traffic & Speedometer Dashboard (Open by default) -->
+            <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card" id="card-live-traffic">
+                <div class="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-3 accordion-header cursor-pointer select-none">
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                        <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2" data-lang="liveTrafficTitle">
+                            <span>Real-Time Traffic & Speedometer</span>
+                        </h3>
+                    </div>
+                    <div class="flex items-center gap-3" onclick="event.stopPropagation()">
+                        <span id="active-conns-badge" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-950 border border-slate-800 text-slate-400">
+                            0 Conns
+                        </span>
+                        <svg class="w-5 h-5 text-slate-400 transform transition-transform duration-200 accordion-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                </div>
+
+                <div class="px-5 pb-5 sm:px-6 sm:pb-6 space-y-4 accordion-content">
+                    <!-- Live Metric Tiles -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider" data-lang="downloadSpeed">Download Speed</span>
+                            <p id="live-down-speed" class="text-base sm:text-lg font-extrabold font-mono text-cyan-400 mt-0.5">0.0 KB/s</p>
+                        </div>
+                        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider" data-lang="uploadSpeed">Upload Speed</span>
+                            <p id="live-up-speed" class="text-base sm:text-lg font-extrabold font-mono text-purple-400 mt-0.5">0.0 KB/s</p>
+                        </div>
+                        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider" data-lang="totalDownloaded">Total Download</span>
+                            <p id="live-total-down" class="text-xs sm:text-sm font-bold font-mono text-slate-300 mt-1">0.0 MB</p>
+                        </div>
+                        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider" data-lang="totalUploaded">Total Upload</span>
+                            <p id="live-total-up" class="text-xs sm:text-sm font-bold font-mono text-slate-300 mt-1">0.0 MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Traffic Graph -->
+                    <div class="relative w-full h-32 rounded-xl bg-slate-950/90 border border-slate-800/90 overflow-hidden">
+                        <canvas id="traffic-canvas" class="w-full h-full block"></canvas>
+                        <div class="absolute top-2 right-3 flex items-center gap-3 text-[10px] font-mono select-none">
+                            <span class="flex items-center gap-1 text-cyan-400"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Download</span>
+                            <span class="flex items-center gap-1 text-purple-400"><span class="w-2 h-2 rounded-full bg-purple-400"></span> Upload</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- 1. Desktop Engine Live Controller (Open by default) -->
             <section class="glass-panel rounded-2xl shadow-xl overflow-hidden accordion-card" id="card-desktop-engine">
                 <div class="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-3 accordion-header cursor-pointer select-none">
@@ -1153,6 +1229,43 @@
             <div class="flex justify-end gap-2.5 pt-2">
                 <button id="confirm-cancel-btn" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-lg transition-colors" data-lang="confirmCancel">Cancel</button>
                 <button id="confirm-yes-btn" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow transition-colors" data-lang="confirmYes">Yes, Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- APP UPDATE MODAL                                                -->
+    <!-- ============================================================== -->
+    <div id="app-update-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/80 w-full max-w-md p-6 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div>
+                    <h3 id="update-modal-title" class="font-bold text-base text-white" data-lang="updateAvailableTitle">New Update Available!</h3>
+                    <p id="update-modal-subtitle" class="text-xs text-slate-400" data-lang="updateAvailableMsg">A new version of General Proxy Manager is available.</p>
+                </div>
+            </div>
+            
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
+                <div class="flex justify-between text-slate-400">
+                    <span data-lang="currentVersion">Current Version:</span>
+                    <span id="update-current-ver" class="text-slate-300">v2.0.0</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span data-lang="latestVersion">Latest Version:</span>
+                    <span id="update-latest-ver" class="text-emerald-400 font-bold">v2.0.0</span>
+                </div>
+            </div>
+
+            <div id="update-changelog" class="text-xs text-slate-300 max-h-36 overflow-y-auto custom-scrollbar p-2 bg-slate-950/50 rounded-lg border border-slate-800 whitespace-pre-line hidden"></div>
+
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button id="close-update-modal-btn" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-lg transition-colors" data-lang="closeModalBtn">Dismiss</button>
+                <a id="download-update-link" href="https://github.com/MahDN/SingMP-Gen/releases/latest" target="_blank" rel="noopener" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow transition-colors flex items-center gap-1.5" data-lang="downloadUpdateBtn">
+                    ⬇️ Download from GitHub
+                </a>
             </div>
         </div>
     </div>

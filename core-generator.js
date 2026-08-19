@@ -68,6 +68,25 @@ export function cleanJsonString(text) {
   return cleaned.trim();
 }
 
+export function safeBase64Decode(str) {
+  if (!str || typeof str !== 'string') return null;
+  try {
+    let clean = str.trim().replace(/[\r\n\s]/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    while (clean.length % 4 !== 0) clean += '=';
+    if (typeof atob === 'function') {
+      return decodeURIComponent(escape(atob(clean)));
+    } else if (typeof Buffer !== 'undefined') {
+      return Buffer.from(clean, 'base64').toString('utf8');
+    }
+  } catch (_) {
+    try {
+      if (typeof atob === 'function') return atob(str);
+      if (typeof Buffer !== 'undefined') return Buffer.from(str, 'base64').toString('utf8');
+    } catch (_) {}
+  }
+  return null;
+}
+
 export function parseVlessLink(link) {
   try {
     const trimmed = link.trim();
@@ -145,36 +164,266 @@ export function parseVlessLink(link) {
   }
 }
 
+export function parseTrojanLink(link) {
+  try {
+    const trimmed = link.trim();
+    if (!trimmed.startsWith('trojan://')) return null;
+    const url = new URL(trimmed);
+    const password = decodeURIComponent(url.username || url.password || '');
+    const server = url.hostname;
+    const server_port = parseInt(url.port || '443', 10);
+    const tag = url.hash ? decodeURIComponent(url.hash.slice(1)) : `trojan-${server}:${server_port}`;
+    const params = url.searchParams;
+
+    const security = (params.get('security') || 'tls').toLowerCase();
+    const type = (params.get('type') || params.get('headerType') || 'tcp').toLowerCase();
+    const sni = params.get('sni') || params.get('peer') || params.get('host') || server;
+    const alpn = params.get('alpn') ? params.get('alpn').split(',') : undefined;
+    const fp = params.get('fp') || 'chrome';
+    const path = params.get('path') || '/';
+    const host = params.get('host');
+    const allowInsecure = params.get('allowInsecure') === '1' || params.get('insecure') === '1';
+
+    const outbound = {
+      type: 'trojan',
+      tag: tag,
+      server: server,
+      server_port: server_port,
+      password: password,
+      tls: {
+        enabled: true,
+        server_name: sni,
+        insecure: allowInsecure,
+        alpn: alpn,
+        utls: { enabled: true, fingerprint: fp }
+      }
+    };
+
+    if (type === 'ws') {
+      outbound.transport = {
+        type: 'ws',
+        path: path,
+        headers: host ? { Host: host } : undefined
+      };
+    } else if (type === 'grpc') {
+      outbound.transport = {
+        type: 'grpc',
+        service_name: params.get('serviceName') || path
+      };
+    } else if (type === 'http' || type === 'xhttp' || type === 'splithttp') {
+      outbound.transport = {
+        type: 'http',
+        path: path,
+        host: host ? [host] : undefined
+      };
+    }
+
+    return outbound;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function parseShadowsocksLink(link) {
+  try {
+    const trimmed = link.trim();
+    if (!trimmed.startsWith('ss://')) return null;
+    const withoutPrefix = trimmed.slice(5);
+    const hashIdx = withoutPrefix.indexOf('#');
+    let mainPart = hashIdx !== -1 ? withoutPrefix.slice(0, hashIdx) : withoutPrefix;
+    const tag = hashIdx !== -1 ? decodeURIComponent(withoutPrefix.slice(hashIdx + 1)) : '';
+
+    let method = '';
+    let password = '';
+    let server = '';
+    let server_port = 8388;
+
+    if (mainPart.includes('@')) {
+      // SIP002 format: ss://[base64(method:password)]@server:port/?plugin=...
+      const atIdx = mainPart.indexOf('@');
+      const userinfoPart = mainPart.slice(0, atIdx);
+      const hostPart = mainPart.slice(atIdx + 1).split('/')[0].split('?')[0];
+
+      let decodedUserinfo = safeBase64Decode(userinfoPart) || userinfoPart;
+      if (decodedUserinfo.includes(':')) {
+        const colonIdx = decodedUserinfo.indexOf(':');
+        method = decodedUserinfo.slice(0, colonIdx);
+        password = decodedUserinfo.slice(colonIdx + 1);
+      }
+
+      const hostColon = hostPart.lastIndexOf(':');
+      if (hostColon !== -1) {
+        server = hostPart.slice(0, hostColon);
+        server_port = parseInt(hostPart.slice(hostColon + 1), 10) || 8388;
+      } else {
+        server = hostPart;
+      }
+    } else {
+      // Legacy format: ss://base64(method:password@server:port)
+      const decoded = safeBase64Decode(mainPart);
+      if (decoded && decoded.includes('@')) {
+        const atIdx = decoded.indexOf('@');
+        const userinfoPart = decoded.slice(0, atIdx);
+        const hostPart = decoded.slice(atIdx + 1);
+
+        const colonIdx = userinfoPart.indexOf(':');
+        if (colonIdx !== -1) {
+          method = userinfoPart.slice(0, colonIdx);
+          password = userinfoPart.slice(colonIdx + 1);
+        }
+
+        const hostColon = hostPart.lastIndexOf(':');
+        if (hostColon !== -1) {
+          server = hostPart.slice(0, hostColon);
+          server_port = parseInt(hostPart.slice(hostColon + 1), 10) || 8388;
+        } else {
+          server = hostPart;
+        }
+      }
+    }
+
+    if (!server || !method || !password) return null;
+
+    return {
+      type: 'shadowsocks',
+      tag: tag || `ss-${server}:${server_port}`,
+      server: server,
+      server_port: server_port,
+      method: method,
+      password: password
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+export function parseHysteria2Link(link) {
+  try {
+    const trimmed = link.trim();
+    if (!trimmed.startsWith('hysteria2://') && !trimmed.startsWith('hy2://')) return null;
+    const normalized = trimmed.startsWith('hy2://') 
+      ? 'hysteria2://' + trimmed.slice(6) 
+      : trimmed;
+    const url = new URL(normalized);
+    const password = decodeURIComponent(url.username || url.password || '');
+    const server = url.hostname;
+    const server_port = parseInt(url.port || '443', 10);
+    const tag = url.hash ? decodeURIComponent(url.hash.slice(1)) : `hy2-${server}:${server_port}`;
+    const params = url.searchParams;
+
+    const sni = params.get('sni') || params.get('peer') || params.get('host') || server;
+    const insecure = params.get('insecure') === '1' || params.get('insecure') === 'true';
+    const obfs = params.get('obfs');
+    const obfsPassword = params.get('obfs-password') || params.get('obfs_password');
+    const upMbps = params.get('up') ? parseInt(params.get('up'), 10) : undefined;
+    const downMbps = params.get('down') ? parseInt(params.get('down'), 10) : undefined;
+
+    const outbound = {
+      type: 'hysteria2',
+      tag: tag,
+      server: server,
+      server_port: server_port,
+      password: password,
+      tls: {
+        enabled: true,
+        server_name: sni,
+        insecure: insecure
+      }
+    };
+
+    if (obfs) {
+      outbound.obfs = {
+        type: obfs === '1' ? 'salamander' : obfs,
+        password: obfsPassword || ''
+      };
+    }
+    if (upMbps) outbound.up_mbps = upMbps;
+    if (downMbps) outbound.down_mbps = downMbps;
+
+    return outbound;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function parseWireGuardLink(link) {
+  try {
+    const trimmed = link.trim();
+    if (!trimmed.startsWith('wireguard://') && !trimmed.startsWith('wg://')) return null;
+    const normalized = trimmed.startsWith('wg://')
+      ? 'wireguard://' + trimmed.slice(5)
+      : trimmed;
+    const url = new URL(normalized);
+    const privateKey = decodeURIComponent(url.username || url.password || '');
+    const server = url.hostname;
+    const server_port = parseInt(url.port || '51820', 10);
+    const tag = url.hash ? decodeURIComponent(url.hash.slice(1)) : `wg-${server}:${server_port}`;
+    const params = url.searchParams;
+
+    const peerPublicKey = params.get('public_key') || params.get('peer_public_key') || params.get('pubkey') || '';
+    const ip = params.get('ip') || params.get('address') || '10.0.0.2/32';
+    const psk = params.get('preshared_key') || params.get('psk');
+    const reservedRaw = params.get('reserved');
+    const mtu = params.get('mtu') ? parseInt(params.get('mtu'), 10) : undefined;
+
+    let reserved = undefined;
+    if (reservedRaw) {
+      reserved = reservedRaw.split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
+      if (reserved.length === 0) reserved = undefined;
+    }
+
+    const localAddress = ip.includes(',') ? ip.split(',').map(s => s.trim()) : [ip];
+
+    const outbound = {
+      type: 'wireguard',
+      tag: tag,
+      server: server,
+      server_port: server_port,
+      system_interface: false,
+      local_address: localAddress,
+      private_key: privateKey,
+      peer_public_key: peerPublicKey
+    };
+
+    if (psk) outbound.pre_shared_key = psk;
+    if (reserved) outbound.reserved = reserved;
+    if (mtu) outbound.mtu = mtu;
+
+    return outbound;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function parseSingleShareLink(line) {
+  if (!line || typeof line !== 'string') return null;
+  const trimmed = line.trim();
+  if (trimmed.startsWith('vless://')) return parseVlessLink(trimmed);
+  if (trimmed.startsWith('trojan://')) return parseTrojanLink(trimmed);
+  if (trimmed.startsWith('ss://')) return parseShadowsocksLink(trimmed);
+  if (trimmed.startsWith('hysteria2://') || trimmed.startsWith('hy2://')) return parseHysteria2Link(trimmed);
+  if (trimmed.startsWith('wireguard://') || trimmed.startsWith('wg://')) return parseWireGuardLink(trimmed);
+  return null;
+}
+
 export function tryParseShareLinksOrBase64(text) {
-  if (typeof text !== 'string') return null;
+  if (!text || typeof text !== 'string') return null;
   const trimmed = text.trim();
 
-  // Try direct lines with vless://
+  // Try direct lines with share link protocol schemes
   const lines = trimmed.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const directVless = lines.filter(l => l.startsWith('vless://'));
-  if (directVless.length > 0) {
-    const outbounds = directVless.map(parseVlessLink).filter(Boolean);
-    if (outbounds.length > 0) return outbounds;
+  const directParsed = lines.map(parseSingleShareLink).filter(Boolean);
+  if (directParsed.length > 0) {
+    return directParsed;
   }
 
   // Try Base64 decoding
-  try {
-    const cleanB64 = trimmed.replace(/\s/g, '');
-    let decoded = '';
-    if (typeof atob === 'function') {
-      decoded = atob(cleanB64);
-    } else if (typeof Buffer !== 'undefined') {
-      decoded = Buffer.from(cleanB64, 'base64').toString('utf8');
-    }
-    if (decoded && (decoded.includes('vless://') || decoded.includes('vmess://') || decoded.includes('trojan://') || decoded.includes('ss://'))) {
-      const decodedLines = decoded.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      const b64Vless = decodedLines.filter(l => l.startsWith('vless://'));
-      if (b64Vless.length > 0) {
-        const outbounds = b64Vless.map(parseVlessLink).filter(Boolean);
-        if (outbounds.length > 0) return outbounds;
-      }
-    }
-  } catch (_) {}
+  const decoded = safeBase64Decode(trimmed);
+  if (decoded) {
+    const decodedLines = decoded.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const b64Parsed = decodedLines.map(parseSingleShareLink).filter(Boolean);
+    if (b64Parsed.length > 0) return b64Parsed;
+  }
 
   return null;
 }
@@ -332,7 +581,9 @@ export function generateConfig({
   remoteDns = '1.1.1.1',
   dnsStrategy = 'prefer_ipv4',
   logLevel = 'warn',
-  listenAddress = '127.0.0.1'
+  listenAddress = '127.0.0.1',
+  enableMasterPort = false,
+  masterPort = 20800
 }) {
   if (!Array.isArray(normalizedNodes) || normalizedNodes.length === 0) {
     throw new Error('Cannot generate configuration: No proxy nodes available.');
@@ -369,6 +620,12 @@ export function generateConfig({
       default_domain_resolver: 'local_dns',
       rules: [],
       final: 'block'
+    },
+    experimental: {
+      clash_api: {
+        external_controller: '127.0.0.1:9090',
+        secret: ''
+      }
     }
   };
 
@@ -396,6 +653,16 @@ export function generateConfig({
       detour: node.outboundTag
     });
   });
+
+  // Master Port DNS server (routes via auto-fastest urltest outbound)
+  if (enableMasterPort) {
+    dnsServers.push({
+      tag: 'dns-master',
+      type: 'udp',
+      server: remoteDns || '1.1.1.1',
+      detour: 'auto-fastest'
+    });
+  }
 
   // Bootstrap local_dns server
   if (bootstrapDns === 'local') {
@@ -430,6 +697,14 @@ export function generateConfig({
     });
   }
 
+  // Master Port DNS routing
+  if (enableMasterPort) {
+    dnsRules.push({
+      inbound: 'master-in',
+      server: 'dns-master'
+    });
+  }
+
   // Per-inbound DNS routing
   enabledNodes.forEach(node => {
     dnsRules.push({
@@ -441,38 +716,111 @@ export function generateConfig({
   finalConfig.dns.rules = dnsRules;
 
   // 3. Inbounds
-  finalConfig.inbounds = enabledNodes.map(node => ({
+  const individualInbounds = enabledNodes.map(node => ({
     type: 'mixed',
     tag: node.inboundTag,
     listen: node.listenAddress || listenAddress || '127.0.0.1',
     listen_port: parseInt(node.port, 10)
   }));
 
-  // 4. Outbounds
-  const generatedOutbounds = enabledNodes.map(node => {
+  if (enableMasterPort) {
+    const masterInbound = {
+      type: 'mixed',
+      tag: 'master-in',
+      listen: listenAddress || '127.0.0.1',
+      listen_port: parseInt(masterPort, 10) || 20800
+    };
+    finalConfig.inbounds = [masterInbound, ...individualInbounds];
+  } else {
+    finalConfig.inbounds = individualInbounds;
+  }
+
+  // 4. Outbounds & Endpoints
+  const generatedEndpoints = [];
+  const generatedOutbounds = [];
+
+  enabledNodes.forEach(node => {
     const clonedOutbound = deepClone(node.rawOutbound);
-    // Assign deterministic tag
-    clonedOutbound.tag = node.outboundTag;
-    return clonedOutbound;
+    if (clonedOutbound.type === 'wireguard') {
+      const ep = {
+        type: 'wireguard',
+        tag: node.outboundTag,
+        address: Array.isArray(clonedOutbound.local_address) ? clonedOutbound.local_address : (clonedOutbound.address || ['10.0.0.2/32']),
+        private_key: clonedOutbound.private_key,
+        peers: [
+          {
+            address: clonedOutbound.server,
+            port: clonedOutbound.server_port || 51820,
+            public_key: clonedOutbound.peer_public_key || clonedOutbound.public_key || '',
+            allowed_ips: ['0.0.0.0/0', '::/0']
+          }
+        ]
+      };
+      if (clonedOutbound.mtu) ep.mtu = clonedOutbound.mtu;
+      if (clonedOutbound.pre_shared_key) ep.peers[0].pre_shared_key = clonedOutbound.pre_shared_key;
+      if (clonedOutbound.reserved) ep.peers[0].reserved = clonedOutbound.reserved;
+      generatedEndpoints.push(ep);
+    } else {
+      clonedOutbound.tag = node.outboundTag;
+      generatedOutbounds.push(clonedOutbound);
+    }
   });
+
+  if (generatedEndpoints.length > 0) {
+    finalConfig.endpoints = generatedEndpoints;
+  }
+
+  const specialOutbounds = [];
+  if (enableMasterPort) {
+    specialOutbounds.push({
+      type: 'urltest',
+      tag: 'auto-fastest',
+      outbounds: enabledNodes.map(n => n.outboundTag),
+      url: 'https://cp.cloudflare.com/generate_204',
+      interval: '3m',
+      tolerance: 50
+    });
+  }
 
   const baseOutbounds = [
     { type: 'direct', tag: 'direct' },
     { type: 'block', tag: 'block' }
   ];
 
-  finalConfig.outbounds = [...generatedOutbounds, ...baseOutbounds];
+  finalConfig.outbounds = [...generatedOutbounds, ...specialOutbounds, ...baseOutbounds];
 
   // 5. Route section
   if (!finalConfig.route) finalConfig.route = {};
   finalConfig.route.default_domain_resolver = 'local_dns';
   finalConfig.route.final = 'block';
 
+  const routeRules = [];
+  if (enableMasterPort) {
+    routeRules.push({
+      inbound: 'master-in',
+      outbound: 'auto-fastest'
+    });
+  }
+
   // Strict 1:1 Inbound -> Outbound route rules
-  finalConfig.route.rules = enabledNodes.map(node => ({
-    inbound: node.inboundTag,
-    outbound: node.outboundTag
-  }));
+  enabledNodes.forEach(node => {
+    routeRules.push({
+      inbound: node.inboundTag,
+      outbound: node.outboundTag
+    });
+  });
+
+  finalConfig.route.rules = routeRules;
+
+  // 6. Experimental (Clash API for real-time traffic statistics)
+  if (!finalConfig.experimental) {
+    finalConfig.experimental = {
+      clash_api: {
+        external_controller: '127.0.0.1:9090',
+        secret: ''
+      }
+    };
+  }
 
   return finalConfig;
 }
@@ -532,8 +880,14 @@ export function validateGeneratedConfig(config, normalizedNodes) {
     }
   });
 
-  // Check outbounds tags & uniqueness
+  // Check outbounds & endpoints tags & uniqueness
   const outboundTags = new Set();
+  (config.endpoints || []).forEach((ep, i) => {
+    if (!ep.tag) errors.push(`Endpoint #${i} has no tag.`);
+    if (outboundTags.has(ep.tag)) errors.push(`Duplicate tag in endpoints: ${ep.tag}`);
+    outboundTags.add(ep.tag);
+  });
+
   config.outbounds.forEach((out, i) => {
     if (!out.tag) errors.push(`Outbound #${i} has no tag.`);
     if (outboundTags.has(out.tag)) errors.push(`Duplicate outbound tag: ${out.tag}`);
@@ -543,6 +897,19 @@ export function validateGeneratedConfig(config, normalizedNodes) {
       if (!out.server) errors.push(`VLESS outbound ${out.tag} missing "server" field.`);
       if (!out.server_port) errors.push(`VLESS outbound ${out.tag} missing "server_port" field.`);
       if (!out.uuid) errors.push(`VLESS outbound ${out.tag} missing "uuid" field.`);
+    } else if (out.type === 'trojan') {
+      if (!out.server) errors.push(`Trojan outbound ${out.tag} missing "server" field.`);
+      if (!out.server_port) errors.push(`Trojan outbound ${out.tag} missing "server_port" field.`);
+      if (!out.password) errors.push(`Trojan outbound ${out.tag} missing "password" field.`);
+    } else if (out.type === 'shadowsocks') {
+      if (!out.server) errors.push(`Shadowsocks outbound ${out.tag} missing "server" field.`);
+      if (!out.server_port) errors.push(`Shadowsocks outbound ${out.tag} missing "server_port" field.`);
+      if (!out.method) errors.push(`Shadowsocks outbound ${out.tag} missing "method" field.`);
+      if (!out.password) errors.push(`Shadowsocks outbound ${out.tag} missing "password" field.`);
+    } else if (out.type === 'hysteria2') {
+      if (!out.server) errors.push(`Hysteria2 outbound ${out.tag} missing "server" field.`);
+      if (!out.server_port) errors.push(`Hysteria2 outbound ${out.tag} missing "server_port" field.`);
+      if (!out.password) errors.push(`Hysteria2 outbound ${out.tag} missing "password" field.`);
     }
   });
 

@@ -171,3 +171,31 @@ errorSubscriptionFetch: "错误：无法直接获取订阅内容，可能是目�
 errorPortInvalid: "错误：端口号必须为 1 到 65535 之间的有效整数。"
 errorPortDuplicate: "错误：检测到重复的端口号，每个启用的节点必须分配独立端口。"
 errorNoEnabledNodes: "错误：至少需要启用一个代理节点才能生成配置。"
+
+masterPortLabel: "主自动优选端口"
+masterPortDesc: "单个聚合端口，通过定期的 urltest 自动路由到延迟最低的节点。"
+masterPortEnable: "启用主自动优选端口 (20800)"
+autoFastestTag: "自动优选"
+
+systemProxyBtn: "系统代理"
+systemProxyOn: "系统代理：已开启"
+systemProxyOff: "系统代理：已关闭"
+systemProxyPortLabel: "系统代理端口"
+
+liveTrafficTitle: "实时流量与测速仪表盘"
+downloadSpeed: "下载速度"
+uploadSpeed: "上传速度"
+totalDownloaded: "总下载量"
+totalUploaded: "总上传量"
+activeConnections: "活跃连接"
+
+stopTestBtn: "⏹️ 停止测试"
+testStopped: "测试已停止"
+
+checkUpdatesBtn: "检查更新"
+updateAvailableTitle: "发现新版本！"
+updateAvailableMsg: "General Proxy Manager 有新版本可供下载。"
+downloadUpdateBtn: "从 GitHub 下载"
+alreadyLatestVersion: "您当前使用的是最新版本。"
+currentVersion: "当前版本"
+latestVersion: "最新版本"

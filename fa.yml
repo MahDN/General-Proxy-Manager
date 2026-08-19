@@ -194,3 +194,31 @@ errorSubscriptionFetch: "خطا: دریافت لینک اشتراک با شکس�
 errorPortInvalid: "خطا: شماره پورت‌ها باید اعدادی صحیح بین 1 تا 65535 باشند."
 errorPortDuplicate: "خطا: پورت تکراری شناسایی شد. هر نود فعال باید یک پورت محلی اختصاصی و یکتا داشته باشد."
 errorNoEnabledNodes: "خطا: حداقل باید یک نود پروکسی را فعال کنید تا کانفیگ تولید شود."
+
+masterPortLabel: "پورت مستر سوییچ خودکار"
+masterPortDesc: "یک پورت تجمیعی یکپارچه که به صورت خودکار ترافیک را به سریع‌ترین نود (با کمترین پینگ) هدایت می‌کند."
+masterPortEnable: "فعال‌سازی پورت مستر هوشمند (20800)"
+autoFastestTag: "سریع‌ترین خودکار"
+
+systemProxyBtn: "پروکسی سیستم"
+systemProxyOn: "پروکسی سیستم: فعال"
+systemProxyOff: "پروکسی سیستم: غیرفعال"
+systemProxyPortLabel: "پورت پروکسی سیستم"
+
+liveTrafficTitle: "داشبورد زنده سرعت و ترافیک مصرفی"
+downloadSpeed: "سرعت دانلود"
+uploadSpeed: "سرعت آپلود"
+totalDownloaded: "کل دانلود"
+totalUploaded: "کل آپلود"
+activeConnections: "اتصالات فعال"
+
+stopTestBtn: "⏹️ توقف تست"
+testStopped: "تست متوقف شد"
+
+checkUpdatesBtn: "بررسی به‌روزرسانی"
+updateAvailableTitle: "نسخه جدید در دسترس است!"
+updateAvailableMsg: "نسخه جدیدی از General Proxy Manager منتشر شده و آماده دانلود است."
+downloadUpdateBtn: "دانلود از گیت‌هاب"
+alreadyLatestVersion: "شما از آخرین نسخه برنامه استفاده می‌کنید."
+currentVersion: "نسخه فعلی"
+latestVersion: "آخرین نسخه"

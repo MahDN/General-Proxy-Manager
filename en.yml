@@ -170,3 +170,31 @@ errorSubscriptionFetch: "Error: Direct subscription fetch failed. The remote ser
 errorPortInvalid: "Error: Port numbers must be valid integers between 1 and 65535."
 errorPortDuplicate: "Error: Duplicate port numbers detected. Each enabled node must have a unique local port."
 errorNoEnabledNodes: "Error: At least one proxy node must be enabled to generate configuration."
+
+masterPortLabel: "Master Auto-Fastest Port"
+masterPortDesc: "Single aggregate port that automatically routes to the lowest latency node via periodic urltest."
+masterPortEnable: "Enable Master Auto-Fastest Port (20800)"
+autoFastestTag: "Auto-Fastest"
+
+systemProxyBtn: "System Proxy"
+systemProxyOn: "System Proxy: Active"
+systemProxyOff: "System Proxy: Disabled"
+systemProxyPortLabel: "System Proxy Port"
+
+liveTrafficTitle: "Real-Time Traffic & Speedometer"
+downloadSpeed: "Download Speed"
+uploadSpeed: "Upload Speed"
+totalDownloaded: "Total Download"
+totalUploaded: "Total Upload"
+activeConnections: "Active Connections"
+
+stopTestBtn: "⏹️ Stop Test"
+testStopped: "Test Stopped"
+
+checkUpdatesBtn: "Check for Updates"
+updateAvailableTitle: "New Update Available!"
+updateAvailableMsg: "A new version of General Proxy Manager is available for download."
+downloadUpdateBtn: "Download Release from GitHub"
+alreadyLatestVersion: "You are using the latest version."
+currentVersion: "Current Version"
+latestVersion: "Latest Version"

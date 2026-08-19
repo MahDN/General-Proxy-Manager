@@ -8,6 +8,8 @@ pub struct ProbeResult {
     pub latency_ms: Option<u64>,
     pub http_status: Option<u16>,
     pub egress_ip: Option<String>,
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
     pub error: Option<String>,
 }
 
@@ -27,6 +29,8 @@ pub async fn probe_single_port(
                 latency_ms: None,
                 http_status: None,
                 egress_ip: None,
+                country_code: None,
+                country_name: None,
                 error: Some(format!("Invalid proxy config: {}", e)),
             };
         }
@@ -45,6 +49,8 @@ pub async fn probe_single_port(
                 latency_ms: None,
                 http_status: None,
                 egress_ip: None,
+                country_code: None,
+                country_name: None,
                 error: Some(format!("Client build error: {}", e)),
             };
         }
@@ -59,13 +65,22 @@ pub async fn probe_single_port(
         Ok(response) => {
             let status = response.status().as_u16();
 
-            // Fetch IP in background
+            // Fetch IP & Country in background
             let mut detected_ip = None;
+            let mut detected_country_code = None;
+            let mut detected_country_name = None;
+
             if let Ok(ip_resp) = client.get(&ip_url).send().await {
                 if let Ok(text) = ip_resp.text().await {
                     if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&text) {
-                        if let Some(ip_str) = json_val.get("ip").and_then(|v| v.as_str()) {
+                        if let Some(ip_str) = json_val.get("query").or_else(|| json_val.get("ip")).or_else(|| json_val.get("ipAddress")).and_then(|v| v.as_str()) {
                             detected_ip = Some(ip_str.to_string());
+                        }
+                        if let Some(cc) = json_val.get("countryCode").or_else(|| json_val.get("country_code")).or_else(|| json_val.get("country")).and_then(|v| v.as_str()) {
+                            detected_country_code = Some(cc.to_string());
+                        }
+                        if let Some(cn) = json_val.get("country").or_else(|| json_val.get("countryName")).or_else(|| json_val.get("country_name")).and_then(|v| v.as_str()) {
+                            detected_country_name = Some(cn.to_string());
                         }
                     }
                     if detected_ip.is_none() {
@@ -80,6 +95,8 @@ pub async fn probe_single_port(
                 latency_ms: Some(elapsed_ms),
                 http_status: Some(status),
                 egress_ip: detected_ip,
+                country_code: detected_country_code,
+                country_name: detected_country_name,
                 error: None,
             }
         }
@@ -89,6 +106,8 @@ pub async fn probe_single_port(
             latency_ms: None,
             http_status: None,
             egress_ip: None,
+            country_code: None,
+            country_name: None,
             error: Some(e.to_string()),
         },
     }

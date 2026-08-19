@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const customFilenameInput = document.getElementById('custom-filename-input');
   const listenAddressInput = document.getElementById('listen-address');
   const startPortInput = document.getElementById('start-port');
+  const enableMasterPortCheckbox = document.getElementById('enable-master-port');
+  const masterPortInput = document.getElementById('master-port-input');
   const bootstrapDnsSelect = document.getElementById('bootstrap-dns');
   const remoteDnsSelect = document.getElementById('remote-dns');
   const dnsStrategySelect = document.getElementById('dns-strategy');
@@ -87,6 +89,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const langSwitcher = document.getElementById('language-switcher');
   const loadingOverlay = document.getElementById('loading-overlay');
   const loadingMsg = document.getElementById('loading-msg');
+
+  // System Proxy Elements
+  const systemProxyBtn = document.getElementById('system-proxy-btn');
+  const systemProxyIndicator = document.getElementById('system-proxy-indicator');
+  let isSystemProxyActive = false;
+
+  // Auto-Updater Elements
+  const APP_VERSION = 'v2.0.0';
+  const checkUpdatesBtn = document.getElementById('check-updates-btn');
+  const updateBadgeDot = document.getElementById('update-badge-dot');
+  const appUpdateModal = document.getElementById('app-update-modal');
+  const closeUpdateModalBtn = document.getElementById('close-update-modal-btn');
+  const updateCurrentVer = document.getElementById('update-current-ver');
+  const updateLatestVer = document.getElementById('update-latest-ver');
+  const updateChangelog = document.getElementById('update-changelog');
+
+  // Stop Test and Latency Elements
+  const stopTestBtn = document.getElementById('stop-test-btn');
+  let isTestingCancelled = false;
 
   // Visual Traffic Flow Diagram elements
   const diagramNodeSelect = document.getElementById('diagram-node-select');
@@ -767,6 +788,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const remoteDns = remoteDnsSelect?.value || '1.1.1.1';
       const dnsStrategy = dnsStrategySelect?.value || 'prefer_ipv4';
       const logLevel = logLevelSelect?.value || 'warn';
+      const enableMasterPort = enableMasterPortCheckbox ? enableMasterPortCheckbox.checked : true;
+      const masterPort = parseInt(masterPortInput?.value, 10) || 20800;
 
       currentGeneratedConfig = generateConfig({
         normalizedNodes,
@@ -775,7 +798,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         remoteDns,
         dnsStrategy,
         logLevel,
-        listenAddress
+        listenAddress,
+        enableMasterPort,
+        masterPort
       });
 
       // Output JSON formatting
@@ -842,6 +867,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Render Mapping Summary
     const enabledNodes = normalizedNodes.filter(n => n.enabled);
     summaryMappingList.innerHTML = '';
+
+    const enableMasterPort = enableMasterPortCheckbox ? enableMasterPortCheckbox.checked : true;
+    const masterPort = parseInt(masterPortInput?.value, 10) || 20800;
+
+    if (enableMasterPort) {
+      const masterItem = document.createElement('div');
+      masterItem.className = 'p-3 rounded-xl bg-indigo-950/50 border border-indigo-500/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-indigo-200';
+      masterItem.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-cyan-400">127.0.0.1:${masterPort}</span>
+          <span class="text-indigo-400">&rarr;</span>
+          <span class="font-semibold text-white">⚡ ${langData?.autoFastestTag || 'Auto-Fastest'} (URLTest Auto-Switch)</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-indigo-300 font-mono">
+          <span>Inbound: <code>master-in</code></span>
+          <span>&bull;</span>
+          <span>Outbound: <code class="text-cyan-400">auto-fastest</code></span>
+          <span>&bull;</span>
+          <span>DNS: <code class="text-emerald-400">dns-master</code></span>
+        </div>
+      `;
+      summaryMappingList.appendChild(masterItem);
+    }
 
     enabledNodes.forEach(node => {
       const item = document.createElement('div');
@@ -1209,6 +1257,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindTab2Sort('sort-test-ping', 'ping');
   bindTab2Sort('sort-test-ip', 'ip');
 
+  // --- Country Code to Flag Emoji Helper ---
+  const countryCodeToFlag = (code) => {
+    if (!code || typeof code !== 'string' || code.length !== 2) return '🌐';
+    const upper = code.toUpperCase();
+    return String.fromCodePoint(...[...upper].map(c => 127397 + c.charCodeAt(0)));
+  };
+
   // --- Real-Delay Ping Tester ---
   const testSingleRealPing = async (index) => {
     const node = normalizedNodes[index];
@@ -1230,10 +1285,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           ipUrl
         });
         if (probeRes.success) {
+          let ipDisplay = probeRes.egress_ip || prevRes.ip || '-';
+          if (probeRes.country_code || probeRes.country_name) {
+            const flag = countryCodeToFlag(probeRes.country_code);
+            const cName = probeRes.country_name || probeRes.country_code;
+            ipDisplay = `${flag} ${cName} (${probeRes.egress_ip})`;
+          }
           testResultsMap.set(node.id, {
             status: 'success',
             ping: `${probeRes.latency_ms} ms`,
-            ip: probeRes.egress_ip || prevRes.ip || '-',
+            ip: ipDisplay,
             latencyMs: probeRes.latency_ms
           });
         } else {
@@ -1300,10 +1361,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           ipUrl
         });
         if (probeRes.success && probeRes.egress_ip) {
+          let ipDisplay = probeRes.egress_ip;
+          if (probeRes.country_code || probeRes.country_name) {
+            const flag = countryCodeToFlag(probeRes.country_code);
+            const cName = probeRes.country_name || probeRes.country_code;
+            ipDisplay = `${flag} ${cName} (${probeRes.egress_ip})`;
+          }
           testResultsMap.set(node.id, {
             ...prevRes,
             status: 'success',
-            ip: probeRes.egress_ip
+            ip: ipDisplay
           });
         } else {
           testResultsMap.set(node.id, {
@@ -1319,10 +1386,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ipResp = await fetch(ipUrl, { cache: 'no-store' });
         if (ipResp.ok) {
           const ipData = await ipResp.json();
+          let ipDisplay = ipData.ip || ipData.query || JSON.stringify(ipData);
+          if (ipData.countryCode || ipData.country_code || ipData.country) {
+            const cc = ipData.countryCode || ipData.country_code;
+            const cn = ipData.country || ipData.countryName || cc;
+            const flag = countryCodeToFlag(cc);
+            ipDisplay = `${flag} ${cn} (${ipData.ip || ipData.query})`;
+          }
           testResultsMap.set(node.id, {
             ...prevRes,
             status: 'success',
-            ip: ipData.ip || ipData.query || JSON.stringify(ipData)
+            ip: ipDisplay
           });
         }
       } catch (_) {
@@ -1371,18 +1445,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  if (stopTestBtn) {
+    stopTestBtn.addEventListener('click', () => {
+      isTestingCancelled = true;
+      stopTestBtn.classList.add('hidden');
+    });
+  }
+
   // Batch Ping All Selected
   const testAllPingBtn = document.getElementById('test-all-ping-btn');
   if (testAllPingBtn) {
     testAllPingBtn.addEventListener('click', async () => {
       const execute = async () => {
+        isTestingCancelled = false;
         testAllPingBtn.disabled = true;
-        for (let i = 0; i < normalizedNodes.length; i++) {
-          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
-            await testSingleRealPing(i);
+        if (stopTestBtn) stopTestBtn.classList.remove('hidden');
+        try {
+          for (let i = 0; i < normalizedNodes.length; i++) {
+            if (isTestingCancelled) break;
+            if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+              await testSingleRealPing(i);
+            }
           }
+        } finally {
+          testAllPingBtn.disabled = false;
+          if (stopTestBtn) stopTestBtn.classList.add('hidden');
         }
-        testAllPingBtn.disabled = false;
       };
 
       if (ensureEngineRunningForTests(execute)) {
@@ -1396,13 +1484,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (fetchAllIpBtn) {
     fetchAllIpBtn.addEventListener('click', async () => {
       const execute = async () => {
+        isTestingCancelled = false;
         fetchAllIpBtn.disabled = true;
-        for (let i = 0; i < normalizedNodes.length; i++) {
-          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
-            await fetchSingleNodeIp(i);
+        if (stopTestBtn) stopTestBtn.classList.remove('hidden');
+        try {
+          for (let i = 0; i < normalizedNodes.length; i++) {
+            if (isTestingCancelled) break;
+            if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+              await fetchSingleNodeIp(i);
+            }
           }
+        } finally {
+          fetchAllIpBtn.disabled = false;
+          if (stopTestBtn) stopTestBtn.classList.add('hidden');
         }
-        fetchAllIpBtn.disabled = false;
       };
 
       if (ensureEngineRunningForTests(execute)) {
@@ -1415,14 +1510,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (testAllBtn) {
     testAllBtn.addEventListener('click', async () => {
       const execute = async () => {
+        isTestingCancelled = false;
         testAllBtn.disabled = true;
-        for (let i = 0; i < normalizedNodes.length; i++) {
-          if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
-            await testSingleRealPing(i);
-            await fetchSingleNodeIp(i);
+        if (stopTestBtn) stopTestBtn.classList.remove('hidden');
+        try {
+          for (let i = 0; i < normalizedNodes.length; i++) {
+            if (isTestingCancelled) break;
+            if (testSelectedNodeIds.has(normalizedNodes[i].id) && normalizedNodes[i].enabled) {
+              await testSingleRealPing(i);
+              if (isTestingCancelled) break;
+              await fetchSingleNodeIp(i);
+            }
           }
+        } finally {
+          testAllBtn.disabled = false;
+          if (stopTestBtn) stopTestBtn.classList.add('hidden');
         }
-        testAllBtn.disabled = false;
       };
 
       if (ensureEngineRunningForTests(execute)) {
@@ -1981,6 +2084,247 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // --- Live Traffic & Speedometer Logic ---
+  let trafficWs = null;
+  let trafficInterval = null;
+  const TRAFFIC_HISTORY_POINTS = 40;
+  let trafficHistory = Array.from({ length: TRAFFIC_HISTORY_POINTS }, () => ({ down: 0, up: 0 }));
+  let totalDownBytes = 0;
+  let totalUpBytes = 0;
+
+  const liveDownSpeed = document.getElementById('live-down-speed');
+  const liveUpSpeed = document.getElementById('live-up-speed');
+  const liveTotalDown = document.getElementById('live-total-down');
+  const liveTotalUp = document.getElementById('live-total-up');
+  const activeConnsBadge = document.getElementById('active-conns-badge');
+  const trafficCanvas = document.getElementById('traffic-canvas');
+
+  const formatTrafficBytes = (bytes) => {
+    if (!bytes || bytes < 0) return '0.0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const formatTrafficSpeed = (bytesPerSec) => {
+    if (!bytesPerSec || bytesPerSec < 0) return '0.0 KB/s';
+    if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
+    return `${(bytesPerSec / (1024 * 1024)).toFixed(2)} MB/s`;
+  };
+
+  const renderTrafficCanvas = () => {
+    if (!trafficCanvas) return;
+    const ctx = trafficCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = (trafficCanvas.width = trafficCanvas.offsetWidth || 400);
+    const height = (trafficCanvas.height = trafficCanvas.offsetHeight || 120);
+
+    ctx.clearRect(0, 0, width, height);
+
+    let maxSpeed = 10 * 1024;
+    for (const pt of trafficHistory) {
+      if (pt.down > maxSpeed) maxSpeed = pt.down;
+      if (pt.up > maxSpeed) maxSpeed = pt.up;
+    }
+
+    const stepX = width / (TRAFFIC_HISTORY_POINTS - 1);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = 0.25; y < 1; y += 0.25) {
+      ctx.moveTo(0, height * y);
+      ctx.lineTo(width, height * y);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    for (let i = 0; i < TRAFFIC_HISTORY_POINTS; i++) {
+      const x = i * stepX;
+      const y = height - (trafficHistory[i].down / maxSpeed) * (height - 20) - 8;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#22d3ee';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    const downGrad = ctx.createLinearGradient(0, 0, 0, height);
+    downGrad.addColorStop(0, 'rgba(34, 211, 238, 0.25)');
+    downGrad.addColorStop(1, 'rgba(34, 211, 238, 0.0)');
+    ctx.fillStyle = downGrad;
+    ctx.fill();
+
+    ctx.beginPath();
+    for (let i = 0; i < TRAFFIC_HISTORY_POINTS; i++) {
+      const x = i * stepX;
+      const y = height - (trafficHistory[i].up / maxSpeed) * (height - 20) - 8;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  };
+
+  const handleTrafficTick = (down, up) => {
+    trafficHistory.shift();
+    trafficHistory.push({ down, up });
+
+    totalDownBytes += down;
+    totalUpBytes += up;
+
+    if (liveDownSpeed) liveDownSpeed.textContent = formatTrafficSpeed(down);
+    if (liveUpSpeed) liveUpSpeed.textContent = formatTrafficSpeed(up);
+    if (liveTotalDown) liveTotalDown.textContent = formatTrafficBytes(totalDownBytes);
+    if (liveTotalUp) liveTotalUp.textContent = formatTrafficBytes(totalUpBytes);
+
+    renderTrafficCanvas();
+  };
+
+  const stopTrafficMonitor = () => {
+    if (trafficWs) {
+      try { trafficWs.close(); } catch (_) {}
+      trafficWs = null;
+    }
+    if (trafficInterval) {
+      clearInterval(trafficInterval);
+      trafficInterval = null;
+    }
+    if (liveDownSpeed) liveDownSpeed.textContent = '0.0 KB/s';
+    if (liveUpSpeed) liveUpSpeed.textContent = '0.0 KB/s';
+  };
+
+  const startTrafficPollingFallback = () => {
+    if (trafficInterval) return;
+    trafficInterval = setInterval(async () => {
+      if (!isSingboxEngineRunning) {
+        stopTrafficMonitor();
+        return;
+      }
+      try {
+        const resp = await fetch('http://127.0.0.1:9090/traffic', { cache: 'no-store' });
+        if (resp.ok) {
+          const data = await resp.json();
+          handleTrafficTick(data.down || 0, data.up || 0);
+        }
+      } catch (_) {
+        if (!isTauriEnv()) {
+          const simulatedDown = Math.floor(Math.random() * 600000 + 40000);
+          const simulatedUp = Math.floor(Math.random() * 80000 + 5000);
+          handleTrafficTick(simulatedDown, simulatedUp);
+        }
+      }
+    }, 1000);
+  };
+
+  const startTrafficMonitor = () => {
+    stopTrafficMonitor();
+    try {
+      trafficWs = new WebSocket('ws://127.0.0.1:9090/traffic');
+      trafficWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleTrafficTick(data.down || 0, data.up || 0);
+        } catch (_) {}
+      };
+      trafficWs.onerror = () => {
+        if (trafficWs) {
+          try { trafficWs.close(); } catch (_) {}
+          trafficWs = null;
+        }
+        startTrafficPollingFallback();
+      };
+    } catch (_) {
+      startTrafficPollingFallback();
+    }
+  };
+
+  // --- Windows System Proxy Management ---
+  const updateSystemProxyUI = (active) => {
+    isSystemProxyActive = active;
+    if (systemProxyIndicator) {
+      systemProxyIndicator.className = active ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse' : 'w-2 h-2 rounded-full bg-slate-500';
+    }
+    if (systemProxyBtn) {
+      systemProxyBtn.classList.toggle('border-emerald-500/40', active);
+      systemProxyBtn.classList.toggle('bg-emerald-950/40', active);
+      systemProxyBtn.classList.toggle('text-emerald-300', active);
+      systemProxyBtn.title = active ? (langData?.systemProxyOn || 'System Proxy: Active') : (langData?.systemProxyOff || 'System Proxy: Disabled');
+    }
+  };
+
+  const toggleSystemProxy = async () => {
+    const targetState = !isSystemProxyActive;
+    const masterPort = parseInt(masterPortInput?.value, 10) || 20800;
+
+    if (isTauriEnv()) {
+      try {
+        const res = await tauriInvoke('toggle_system_proxy', {
+          enable: targetState,
+          host: '127.0.0.1',
+          port: masterPort
+        });
+        updateSystemProxyUI(res);
+        appendConsoleLog(`[SYSTEM] Windows System Proxy set to ${res ? `127.0.0.1:${masterPort}` : 'Disabled'}`);
+      } catch (err) {
+        appendConsoleLog(`[ERR] Failed to toggle system proxy: ${err}`);
+      }
+    } else {
+      updateSystemProxyUI(targetState);
+      appendConsoleLog(`[SYSTEM] Browser Simulation: System Proxy toggled to ${targetState ? `127.0.0.1:${masterPort}` : 'OFF'}`);
+    }
+  };
+
+  if (systemProxyBtn) {
+    systemProxyBtn.addEventListener('click', toggleSystemProxy);
+  }
+
+  // --- Auto-Updater System ---
+  const checkForUpdates = async (manual = false) => {
+    try {
+      const resp = await fetch('https://api.github.com/repos/MahDN/SingMP-Gen/releases/latest', {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!resp.ok) {
+        if (manual) alert(langData?.alreadyLatestVersion || 'You are using the latest version.');
+        return;
+      }
+      const data = await resp.json();
+      const latestTag = data.tag_name || 'v2.0.0';
+      if (updateCurrentVer) updateCurrentVer.textContent = APP_VERSION;
+      if (updateLatestVer) updateLatestVer.textContent = latestTag;
+
+      if (latestTag !== APP_VERSION) {
+        if (updateBadgeDot) updateBadgeDot.classList.remove('hidden');
+        if (updateChangelog) {
+          updateChangelog.textContent = data.body || 'New features, protocol parsers and stability improvements.';
+          updateChangelog.classList.remove('hidden');
+        }
+        if (appUpdateModal) appUpdateModal.classList.remove('hidden');
+      } else {
+        if (manual) {
+          alert(langData?.alreadyLatestVersion || 'You are using the latest version.');
+        }
+      }
+    } catch (_) {
+      if (manual) alert(langData?.alreadyLatestVersion || 'You are using the latest version.');
+    }
+  };
+
+  if (checkUpdatesBtn) {
+    checkUpdatesBtn.addEventListener('click', () => checkForUpdates(true));
+  }
+  if (closeUpdateModalBtn && appUpdateModal) {
+    closeUpdateModalBtn.addEventListener('click', () => appUpdateModal.classList.add('hidden'));
+  }
+
   const handleStartEngine = async () => {
     if (!currentGeneratedConfig) {
       handleGenerate();
@@ -2002,6 +2346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         updateEngineStatusUI(res.running, res.pid);
         appendConsoleLog(`[SYSTEM] Engine launched successfully (PID: ${res.pid})`);
+        startTrafficMonitor();
       } catch (err) {
         appendConsoleLog(`[ERR] Failed to launch engine: ${err}`);
       }
@@ -2010,10 +2355,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       appendConsoleLog(`[SYSTEM] Browser Simulation: Launching local gateway on port ${firstPort}...`);
       updateEngineStatusUI(true, Math.floor(Math.random() * 8000 + 1000));
       appendConsoleLog(`[INFO] sing-box listening on ${normalizedNodes.filter(n => n.enabled).length} mixed local proxy ports.`);
+      startTrafficMonitor();
     }
   };
 
   const handleStopEngine = async () => {
+    stopTrafficMonitor();
+    if (isSystemProxyActive) {
+      toggleSystemProxy();
+    }
     if (isTauriEnv()) {
       try {
         const res = await tauriInvoke('stop_singbox_engine');
@@ -2092,4 +2442,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   singBoxTemplate = await fetchTemplate();
   updateSummaryBadge();
   updateRunnerCommand();
+  renderTrafficCanvas();
+  setTimeout(() => checkForUpdates(false), 3000);
 });
