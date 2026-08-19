@@ -22,6 +22,8 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["socks", "json"] }
 parking_lot = "0.12"
+
+[target.'cfg(windows)'.dependencies]
 winreg = "0.52"
 
 [features]
